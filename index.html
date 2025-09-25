@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dark Vocabulary Builder</title>
+    <title>Pro Vocabulary Builder</title>
     <style>
         :root {
             --bg-main: #121212; --bg-surface: #1e1e1e; --bg-card: #2a2a2a;
             --text-primary: #e0e0e0; --text-secondary: #a0a0a0;
             --border-color: #383838; --accent-blue: #2979ff; --accent-green: #00c853;
-            --accent-red: #ff3d00; --accent-yellow: #ffd600; --accent-purple: #ab47bc;
+            --accent-red: #ff3d00; --accent-yellow: #ffd600; --accent-purple: #ab47bc; --accent-orange: #e67e22;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; background-color: var(--bg-main); color: var(--text-primary); margin: 0; padding: 1rem; }
         .container { max-width: 900px; margin: 20px auto; padding: 2rem; background-color: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); }
-        h1, h2 { text-align: center; color: var(--text-primary); margin-bottom: 1rem; }
+        h1, h2, h3 { text-align: center; color: var(--text-primary); margin-bottom: 1rem; }
         
-        /* --- Screen Management --- */
-        .screen { display: block; } /* Home screen is visible by default */
-        #saved-words-screen { display: none; } /* Saved words screen is hidden */
+        /* Screen Management */
+        .screen { display: block; }
+        #saved-words-screen { display: none; }
 
         .nav-area { text-align: center; margin-bottom: 2rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         #word-input { width: 100%; min-height: 120px; padding: 12px; background-color: var(--bg-card); color: var(--text-primary); border: 2px solid var(--border-color); border-radius: 6px; resize: vertical; font-size: 1rem; margin-bottom: 1rem; box-sizing: border-box; }
@@ -26,45 +26,56 @@
         .controls { display: flex; justify-content: center; gap: 1rem; }
         .btn { padding: 12px 25px; font-size: 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; color: white; }
         #fetch-btn { background-color: var(--accent-blue); }
-        #clear-input-btn { background-color: #616161; } /* Clear Input Button */
+        #clear-input-btn { background-color: #616161; }
         #view-saved-btn { background-color: var(--accent-yellow); color: #121212; }
-        #quick-export-btn { background-color: var(--accent-purple); } /* Quick Export Button */
+        #quick-copy-btn { background-color: var(--accent-purple); } /* NEW Quick Copy Button */
+        #data-mgmt-btn { background-color: var(--accent-orange); } /* Data Tools Button */
         
         #status { text-align: center; color: var(--text-secondary); min-height: 24px; margin-top: 1.5rem; font-weight: bold; }
 
         /* Results Area */
         #results-container { margin-top: 2rem; }
-        .word-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 10px; }
-        .word-card h3 { margin: 0; color: var(--accent-blue); font-size: 1.5rem; }
-        .word-card .definition { margin: 0; }
-        .word-card .synonyms { font-style: italic; color: var(--text-secondary); }
+        .word-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 1rem; }
+        .word-card h3 { color: var(--accent-blue); }
         .word-card .actions { margin-top: 10px; display: flex; gap: 10px; }
         .word-card .action-btn { font-size: 0.8rem; padding: 6px 12px; }
-        .save-btn { background-color: var(--accent-green); }
-        .save-btn.saved { background-color: #424242; cursor: not-allowed; }
-        .delete-btn { background-color: var(--accent-red); }
+        .word-card .save-btn { background-color: var(--accent-green); } /* RESTORED COLOR */
+        .word-card .save-btn.saved { background-color: #424242; cursor: not-allowed; } /* RESTORED COLOR */
+        .word-card .delete-btn { background-color: var(--accent-red); } /* RESTORED COLOR */
 
         /* Saved Words Screen Table */
         .back-nav { margin-bottom: 1.5rem; }
-        #back-btn { background-color: #616161; font-size: 1rem; }
+        #back-btn { background-color: #616161; }
         .saved-words-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        .saved-words-table th, .saved-words-table td { padding: 12px; border: 1px solid var(--border-color); text-align: left; vertical-align: top; }
-        .saved-words-table th { background-color: var(--bg-card); font-weight: bold; }
-        .saved-words-table td:first-child { font-weight: bold; color: var(--accent-yellow); }
-        .saved-words-table .delete-saved-btn { font-size: 0.8rem; padding: 5px 10px; border-radius: 4px; background-color: var(--accent-red); }
+        .saved-words-table th, td { padding: 12px; border: 1px solid var(--border-color); text-align: left; vertical-align: middle; }
+        .saved-words-table th { background-color: var(--bg-card); }
+        .action-btn { font-size: 1.2rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; vertical-align: middle; }
+        .action-btn:hover { color: var(--text-primary); }
+        .favorite-btn.favorited { color: var(--accent-yellow); }
+        tr.is-favorite { background-color: #3a3a2a; border-left: 3px solid var(--accent-yellow); }
+
+        /* Data Management Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); }
+        .modal-content { background-color: var(--bg-surface); margin: 15% auto; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; border: 1px solid var(--border-color); }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .data-section { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+        .data-section .btn { width: 100%; margin-bottom: 10px; }
+        #export-txt-btn { background-color: var(--accent-blue); }
+        #export-csv-btn { background-color: var(--accent-green); }
+        #import-btn { background-color: var(--accent-orange); }
     </style>
 </head>
 <body>
     <div class="container">
-        
         <!-- === HOME SCREEN === -->
         <div id="home-screen" class="screen">
-            <h1>Dark Vocabulary Builder</h1>
+            <h1>Pro Vocabulary Builder</h1>
             <div class="nav-area">
-                <button id="view-saved-btn" class="btn">View Saved Words</button>
-                <button id="quick-export-btn" class="btn">Copy Saved Words</button>
+                <button id="view-saved-btn" class="btn">View Saved</button>
+                <button id="quick-copy-btn" class="btn">Copy Words</button>
+                <button id="data-mgmt-btn" class="btn">Data Tools</button>
             </div>
-            <textarea id="word-input" placeholder="Paste words here, separated by spaces..."></textarea>
+            <textarea id="word-input" placeholder="Paste words here..."></textarea>
             <div class="controls">
                 <button id="fetch-btn" class="btn">Fetch Definitions</button>
                 <button id="clear-input-btn" class="btn">Clear Input</button>
@@ -75,136 +86,78 @@
 
         <!-- === SAVED WORDS SCREEN === -->
         <div id="saved-words-screen" class="screen">
-            <div class="back-nav">
-                <button id="back-btn" class="btn">&larr; Back to Home</button>
-            </div>
+            <div class="back-nav"><button id="back-btn" class="btn">&larr; Back to Home</button></div>
             <h2>Saved Words</h2>
             <table class="saved-words-table">
-                <thead>
-                    <tr><th>Word</th><th>Definition</th><th>Synonyms</th><th>Action</th></tr>
-                </thead>
+                <thead><tr><th>Fav</th><th>Word</th><th>Definition</th><th>Synonyms</th><th>Actions</th></tr></thead>
                 <tbody id="saved-words-tbody"></tbody>
             </table>
         </div>
+    </div>
 
+    <!-- === DATA MANAGEMENT MODAL === -->
+    <div id="data-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span><h2>Data Management</h2>
+            <div class="data-section">
+                <h3>Export Full Collection</h3>
+                <button id="export-txt-btn" class="btn">Export as TXT</button>
+                <button id="export-csv-btn" class="btn">Export as CSV (for Excel)</button>
+            </div>
+            <div class="data-section">
+                <h3>Import Full Collection</h3>
+                <button id="import-btn" class="btn">Import from File (.txt, .csv)</button>
+                <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
+            </div>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Elements ---
-            const homeScreen = document.getElementById('home-screen');
-            const savedWordsScreen = document.getElementById('saved-words-screen');
-            const wordInput = document.getElementById('word-input');
-            const fetchBtn = document.getElementById('fetch-btn');
-            const clearInputBtn = document.getElementById('clear-input-btn');
-            const viewSavedBtn = document.getElementById('view-saved-btn');
-            const quickExportBtn = document.getElementById('quick-export-btn');
-            const backBtn = document.getElementById('back-btn');
-            const statusDiv = document.getElementById('status');
-            const resultsContainer = document.getElementById('results-container');
-            const savedWordsTbody = document.getElementById('saved-words-tbody');
-            const STORAGE_KEY = 'savedVocabObjectsDark';
+            const homeScreen = document.getElementById('home-screen'); const savedWordsScreen = document.getElementById('saved-words-screen'); const wordInput = document.getElementById('word-input');
+            const fetchBtn = document.getElementById('fetch-btn'); const clearInputBtn = document.getElementById('clear-input-btn'); const viewSavedBtn = document.getElementById('view-saved-btn');
+            const quickCopyBtn = document.getElementById('quick-copy-btn'); const dataMgmtBtn = document.getElementById('data-mgmt-btn'); const backBtn = document.getElementById('back-btn'); const statusDiv = document.getElementById('status');
+            const resultsContainer = document.getElementById('results-container'); const savedWordsTbody = document.getElementById('saved-words-tbody');
+            const dataModal = document.getElementById('data-modal'); const closeModalBtn = dataModal.querySelector('.close-btn'); const exportTxtBtn = document.getElementById('export-txt-btn');
+            const exportCsvBtn = document.getElementById('export-csv-btn'); const importBtn = document.getElementById('import-btn'); const importFileInput = document.getElementById('import-file-input');
+            const STORAGE_KEY = 'savedVocabObjectsPro';
 
             // --- Event Listeners ---
-            fetchBtn.addEventListener('click', handleFetch);
-            clearInputBtn.addEventListener('click', () => { wordInput.value = ''; });
-            viewSavedBtn.addEventListener('click', showSavedWordsScreen);
-            backBtn.addEventListener('click', showHomeScreen);
-            quickExportBtn.addEventListener('click', handleQuickExport);
-            resultsContainer.addEventListener('click', handleResultAction);
-            savedWordsTbody.addEventListener('click', handleSavedListAction);
+            fetchBtn.addEventListener('click', handleFetch); clearInputBtn.addEventListener('click', () => { wordInput.value = ''; }); viewSavedBtn.addEventListener('click', showSavedWordsScreen);
+            backBtn.addEventListener('click', showHomeScreen); quickCopyBtn.addEventListener('click', handleQuickCopy); resultsContainer.addEventListener('click', handleResultAction); savedWordsTbody.addEventListener('click', handleSavedListAction);
+            dataMgmtBtn.addEventListener('click', () => dataModal.style.display = 'block'); closeModalBtn.addEventListener('click', () => dataModal.style.display = 'none'); window.addEventListener('click', (e) => { if (e.target === dataModal) dataModal.style.display = 'none'; });
+            exportTxtBtn.addEventListener('click', handleExportTXT); exportCsvBtn.addEventListener('click', handleExportCSV); importBtn.addEventListener('click', () => importFileInput.click()); importFileInput.addEventListener('change', handleImport);
 
-            // --- Screen Navigation ---
-            function showHomeScreen() {
-                homeScreen.style.display = 'block';
-                savedWordsScreen.style.display = 'none';
-            }
-            function showSavedWordsScreen() {
-                homeScreen.style.display = 'none';
-                savedWordsScreen.style.display = 'block';
-                renderSavedWordsTable();
-            }
+            function showHomeScreen() { homeScreen.style.display = 'block'; savedWordsScreen.style.display = 'none'; }
+            function showSavedWordsScreen() { homeScreen.style.display = 'none'; savedWordsScreen.style.display = 'block'; renderSavedWordsTable(); }
 
-            // --- Core Functions ---
-            async function handleFetch() {
-                const text = wordInput.value.trim(); if (!text) { statusDiv.textContent = 'Please paste some words first.'; return; }
-                resultsContainer.innerHTML = ''; statusDiv.textContent = 'Fetching definitions...';
-                const words = [...new Set(text.split(/\s+/).filter(word => word.length > 0))];
-                await Promise.all(words.map(async (word) => {
-                    const data = await getWordDefinition(word.toLowerCase());
-                    renderWordResult(word, data);
-                }));
-                statusDiv.textContent = `Fetched ${words.length} unique words.`;
-            }
-            
-            async function getWordDefinition(word) {
-                try {
-                    const originalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; const proxiedUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(originalApiUrl)}`; const response = await fetch(proxiedUrl); if (!response.ok) return { error: 'API Error' };
-                    const blob = await response.json(); if (blob.contents.includes(`"title":"No Definitions Found"`)) return { error: 'No definition found.' };
-                    const data = JSON.parse(blob.contents); const firstMeaning = data[0]?.meanings[0];
-                    const definition = firstMeaning?.definitions[0]?.definition || 'No definition available.'; const synonyms = firstMeaning?.synonyms?.slice(0, 10).join(', ') || 'None';
-                    return { definition, synonyms };
-                } catch (error) { return { error: 'Failed to fetch.' }; }
-            }
-            
-            function renderWordResult(word, data) {
-                const card = document.createElement('div'); card.className = 'word-card';
-                let definitionHTML = `<p class="definition">${data.definition}</p>`; if (data.error) { definitionHTML = `<p class="definition" style="color: var(--accent-red);">${data.error}</p>`; }
-                const isSaved = getSavedWords().some(item => item.word === word.toLowerCase());
-                card.innerHTML = `<h3>${word}</h3>${definitionHTML}<p class="synonyms"><strong>Synonyms:</strong> ${data.synonyms || 'None'}</p><div class="actions"><button class="btn action-btn save-btn ${isSaved ? 'saved' : ''}" data-word="${word}" ${isSaved ? 'disabled' : ''}>${isSaved ? 'Saved' : 'Save'}</button><button class="btn action-btn delete-btn">Delete</button></div>`;
-                resultsContainer.appendChild(card);
-            }
+            async function handleFetch() { const text = wordInput.value.trim(); if (!text) { statusDiv.textContent = 'Please paste some words first.'; return; } resultsContainer.innerHTML = ''; statusDiv.textContent = 'Fetching definitions...'; const words = [...new Set(text.split(/\s+/).filter(Boolean))]; await Promise.all(words.map(async (word) => { const data = await getWordDefinition(word.toLowerCase()); renderWordResult(word, data); })); statusDiv.textContent = `Fetched ${words.length} unique words.`; }
+            async function getWordDefinition(word) { try { const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`; const response = await fetch(proxyUrl); if (!response.ok) return { error: 'API Error' }; const blob = await response.json(); if (blob.contents.includes(`"title":"No Definitions Found"`)) return { error: 'No definition found.' }; const data = JSON.parse(blob.contents); const meaning = data[0]?.meanings[0]; return { definition: meaning?.definitions[0]?.definition || 'N/A', synonyms: meaning?.synonyms?.slice(0, 10).join(', ') || 'None' }; } catch (error) { return { error: 'Failed to fetch.' }; } }
+            function renderWordResult(word, data) { const card = document.createElement('div'); card.className = 'word-card'; let defHTML = `<p class="definition">${data.definition}</p>`; if (data.error) { defHTML = `<p class="definition" style="color: var(--accent-red);">${data.error}</p>`; } const isSaved = getSavedWords().some(item => item.word === word.toLowerCase()); card.innerHTML = `<h3>${word}</h3>${defHTML}<p class="synonyms"><strong>Synonyms:</strong> ${data.synonyms || 'None'}</p><div class="actions"><button class="btn action-btn save-btn ${isSaved ? 'saved' : ''}" data-word="${word}" ${isSaved ? 'disabled' : ''}>${isSaved ? 'Saved' : 'Save'}</button><button class="btn action-btn delete-btn">Delete</button></div>`; resultsContainer.appendChild(card); }
+            function handleResultAction(e) { const target = e.target; if (target.classList.contains('save-btn')) { const card = target.closest('.word-card'); const word = target.dataset.word; const def = card.querySelector('.definition').textContent; const syn = card.querySelector('.synonyms').textContent.replace('Synonyms: ', ''); saveWord({ word: word.toLowerCase(), definition: def, synonyms: syn, isFavorite: false }); target.textContent = 'Saved'; target.classList.add('saved'); target.disabled = true; } else if (target.classList.contains('delete-btn')) { target.closest('.word-card').remove(); } }
+            function handleSavedListAction(e) { const word = e.target.dataset.word; if (!word) return; if (e.target.classList.contains('delete-saved-btn')) { deleteSavedWord(word); } if (e.target.classList.contains('favorite-btn')) { toggleFavorite(word); } if (e.target.classList.contains('move-top-btn')) { moveWordToTop(word); } renderSavedWordsTable(); }
 
-            function handleResultAction(e) {
-                const target = e.target;
-                if (target.classList.contains('save-btn')) {
-                    const card = target.closest('.word-card');
-                    const word = target.dataset.word; const definition = card.querySelector('.definition').textContent; const synonyms = card.querySelector('.synonyms').textContent.replace('Synonyms: ', '');
-                    saveWord({ word: word.toLowerCase(), definition, synonyms });
-                    target.textContent = 'Saved'; target.classList.add('saved'); target.disabled = true;
-                } else if (target.classList.contains('delete-btn')) {
-                    target.closest('.word-card').remove();
-                }
-            }
-
-            function handleSavedListAction(e) {
-                if (e.target.classList.contains('delete-saved-btn')) {
-                    deleteSavedWord(e.target.dataset.word); renderSavedWordsTable();
-                }
-            }
-
-            // --- Local Storage ---
             function getSavedWords() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-            function saveWord(wordObject) { const savedWords = getSavedWords(); if (!savedWords.some(item => item.word === wordObject.word)) { savedWords.push(wordObject); localStorage.setItem(STORAGE_KEY, JSON.stringify(savedWords)); } }
-            function deleteSavedWord(word) { let savedWords = getSavedWords(); savedWords = savedWords.filter(item => item.word !== word); localStorage.setItem(STORAGE_KEY, JSON.stringify(savedWords)); }
+            function setSavedWords(words) { localStorage.setItem(STORAGE_KEY, JSON.stringify(words)); }
+            function saveWord(wordObject) { const words = getSavedWords(); if (!words.some(item => item.word === wordObject.word)) { words.push(wordObject); setSavedWords(words); } }
+            function deleteSavedWord(word) { let words = getSavedWords(); words = words.filter(item => item.word !== word); setSavedWords(words); }
+            function toggleFavorite(word) { let words = getSavedWords(); const idx = words.findIndex(item => item.word === word); if (idx > -1) { words[idx].isFavorite = !words[idx].isFavorite; setSavedWords(words); } }
+            function moveWordToTop(word) { let words = getSavedWords(); const idx = words.findIndex(item => item.word === word); if (idx > -1) { const [item] = words.splice(idx, 1); words.unshift(item); setSavedWords(words); } }
 
-            // --- Saved Words Table ---
-            function renderSavedWordsTable() {
-                const savedWords = getSavedWords(); savedWordsTbody.innerHTML = '';
-                if (savedWords.length === 0) { savedWordsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No words saved yet.</td></tr>'; } 
-                else {
-                    savedWords.sort((a, b) => a.word.localeCompare(b.word)).forEach(item => {
-                        const row = savedWordsTbody.insertRow();
-                        row.innerHTML = `<td>${item.word}</td><td>${item.definition}</td><td>${item.synonyms}</td><td><button class="btn delete-saved-btn" data-word="${item.word}">Delete</button></td>`;
-                    });
-                }
-            }
+            function renderSavedWordsTable() { let words = getSavedWords(); words.sort((a, b) => (b.isFavorite - a.isFavorite) || a.word.localeCompare(b.word)); savedWordsTbody.innerHTML = ''; if (words.length === 0) { savedWordsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No words saved yet.</td></tr>'; } else { words.forEach(item => { const row = savedWordsTbody.insertRow(); row.className = item.isFavorite ? 'is-favorite' : ''; const favIcon = item.isFavorite ? '★' : '☆'; const favClass = item.isFavorite ? 'favorited' : ''; row.innerHTML = `<td><button class="action-btn favorite-btn ${favClass}" data-word="${item.word}">${favIcon}</button></td><td>${item.word}</td><td>${item.definition}</td><td>${item.synonyms}</td><td><button class="action-btn move-top-btn" title="Move to Top" data-word="${item.word}">▲</button><button class="action-btn delete-saved-btn" title="Delete" data-word="${item.word}">🗑️</button></td>`; }); } }
             
-            // --- NEW: Quick Export (Copy) ---
-            function handleQuickExport() {
-                const savedWords = getSavedWords();
-                if (savedWords.length === 0) {
-                    statusDiv.textContent = "No saved words to copy.";
-                    return;
-                }
-                const wordsOnly = savedWords.map(item => item.word).join('\n');
-                navigator.clipboard.writeText(wordsOnly).then(() => {
-                    statusDiv.textContent = `Copied ${savedWords.length} words to clipboard!`;
-                }).catch(err => {
-                    statusDiv.textContent = 'Failed to copy words.';
-                    console.error('Clipboard error:', err);
-                });
+            function handleQuickCopy() {
+                const words = getSavedWords(); if (words.length === 0) { statusDiv.textContent = "No words to copy."; return; }
+                const text = words.map(item => item.word).join('\n');
+                navigator.clipboard.writeText(text).then(() => { statusDiv.textContent = `Copied ${words.length} words to clipboard!`; }).catch(err => { statusDiv.textContent = 'Failed to copy.'; });
             }
+            function handleExportTXT() { const words = getSavedWords(); if (words.length === 0) { alert("No words to export."); return; } let content = ""; words.forEach(item => { content += `Word: ${item.word}\nDefinition: ${item.definition}\nSynonyms: ${item.synonyms}\nFavorite: ${item.isFavorite ? 'Yes' : 'No'}\n\n`; }); downloadFile(content, 'vocabulary.txt', 'text/plain'); }
+            function handleExportCSV() { const words = getSavedWords(); if (words.length === 0) { alert("No words to export."); return; } let content = '"Word","Definition","Synonyms","Favorite"\n'; words.forEach(item => { const row = [`"${item.word}"`, `"${item.definition.replace(/"/g, '""')}"`, `"${item.synonyms.replace(/"/g, '""')}"`, `"${item.isFavorite}"`]; content += row.join(',') + '\n'; }); downloadFile(content, 'vocabulary.csv', 'text/csv'); }
+            function downloadFile(content, fileName, mimeType) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type: mimeType })); a.download = fileName; a.click(); }
+            function handleImport() { const file = importFileInput.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { if (file.name.endsWith('.csv')) { parseAndMergeCSV(e.target.result); } else { parseAndMergeTXT(e.target.result); } } catch (err) { alert("Failed to parse file."); } }; reader.readAsText(file); importFileInput.value = ''; }
+            function parseAndMergeTXT(content) { const newWords = []; const entries = content.split('\n\n'); entries.forEach(entry => { if (!entry.includes('Word:')) return; const wordMatch = entry.match(/Word: (.*)/); const defMatch = entry.match(/Definition: (.*)/); const synMatch = entry.match(/Synonyms: (.*)/); const favMatch = entry.match(/Favorite: (Yes|No)/); if (wordMatch && defMatch) { newWords.push({ word: wordMatch[1].trim().toLowerCase(), definition: defMatch[1].trim(), synonyms: synMatch ? synMatch[1].trim() : 'None', isFavorite: favMatch ? favMatch[1] === 'Yes' : false }); } }); mergeWords(newWords); }
+            function parseAndMergeCSV(content) { const newWords = []; const rows = content.split('\n').slice(1); rows.forEach(row => { const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || []; if (cols.length >= 3) { newWords.push({ word: cols[0].replace(/"/g, '').trim().toLowerCase(), definition: cols[1].replace(/"/g, '').trim(), synonyms: cols[2].replace(/"/g, '').trim(), isFavorite: cols[3] ? cols[3].replace(/"/g, '').trim().toLowerCase() === 'true' : false }); } }); mergeWords(newWords); }
+            function mergeWords(newWords) { const existing = getSavedWords(); const existingSet = new Set(existing.map(item => item.word)); let importedCount = 0; newWords.forEach(newWord => { if (newWord.word && !existingSet.has(newWord.word)) { existing.push(newWord); importedCount++; } }); setSavedWords(existing); alert(`Import complete! Added ${importedCount} new words.`); }
         });
     </script>
 </body>
