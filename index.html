@@ -4,407 +4,208 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Passage Analyzer</title>
-
-    <!-- External Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
-
     <style>
-        /* --- General Styling --- */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #f8f9fa;
-            color: #212529;
-            margin: 0;
-            padding: 1rem;
-        }
-        .container {
-            max-width: 900px;
-            margin: 20px auto;
-            padding: 2rem;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        h1 {
-            text-align: center;
-            color: #343a40;
-            margin-bottom: 2rem;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; background-color: #f8f9fa; color: #212529; margin: 0; padding: 1rem; }
+        .container { max-width: 900px; margin: 20px auto; padding: 2rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h1 { text-align: center; color: #343a40; margin-bottom: 1rem; }
 
-        /* --- Input Area --- */
-        #drop-zone {
-            border: 2px dashed #adb5bd;
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            color: #6c757d;
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s;
-            margin-bottom: 1rem;
-        }
-        #drop-zone.dragover {
-            background-color: #e9ecef;
-            border-color: #0d6efd;
-        }
+        /* --- Navigation Bar --- */
+        .main-nav { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #e9ecef;}
+        .nav-btn { background-color: #e9ecef; color: #495057; }
+        .nav-btn:hover { background-color: #dee2e6; }
+
+        #drop-zone { border: 2px dashed #adb5bd; border-radius: 8px; padding: 40px 20px; text-align: center; color: #6c757d; cursor: pointer; transition: background-color 0.3s, border-color 0.3s; margin-bottom: 1rem; }
+        #drop-zone.dragover { background-color: #e9ecef; border-color: #0d6efd; }
         #file-input { display: none; }
-        #text-input {
-            width: 100%;
-            min-height: 150px;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            resize: vertical;
-            margin-top: 1rem;
-        }
-
-        /* --- Controls & Status --- */
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin: 1.5rem 0;
-        }
-        .btn {
-            padding: 10px 20px;
-            font-size: 1rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-        }
+        #text-input { width: 100%; min-height: 150px; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; resize: vertical; margin-top: 1rem; }
+        .controls { display: flex; justify-content: center; gap: 1rem; margin: 1.5rem 0; }
+        .btn { padding: 10px 20px; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; }
         .btn:active { transform: scale(0.98); }
         #process-btn { background-color: #0d6efd; color: white; }
-        #process-btn:hover { background-color: #0b5ed7; }
         #clear-btn { background-color: #6c757d; color: white; }
-        #clear-btn:hover { background-color: #5c636a; }
+        #save-passage-btn { background-color: #198754; color: white; } /* Save Passage Button */
         #status { text-align: center; color: #6c757d; min-height: 24px; }
 
-        /* --- Passage Display --- */
-        #passage-display {
-            border: 1px solid #e9ecef;
-            background-color: #fff;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-            line-height: 1.8;
-            text-align: justify;
-        }
-        .word {
-            cursor: pointer;
-            border-radius: 3px;
-            padding: 2px 1px;
-            transition: background-color 0.2s;
-        }
+        #passage-display { border: 1px solid #e9ecef; background-color: #fff; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; line-height: 1.8; text-align: justify; }
+        #passage-display h3 { font-size: 1.25rem; color: #212529; margin-top: 1.5rem; margin-bottom: 0.5rem; text-align: left; }
+        #passage-display p { margin-bottom: 1rem; }
+        .word { cursor: pointer; border-radius: 3px; padding: 2px 1px; transition: background-color 0.2s; }
         .word:hover { background-color: #cfe2ff; }
 
-        /* --- Word Lookup Modal --- */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 10% auto;
-            padding: 25px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 600px;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            animation: slideIn 0.3s;
-        }
-        .close-btn {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close-btn:hover { color: black; }
-        #modal-word { margin-top: 0; color: #0d6efd; }
-        #modal-body { max-height: 40vh; overflow-y: auto; }
-        #modal-body h3 { border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 1rem; }
-        #save-word-btn {
-            margin-top: 20px;
-            background-color: #198754;
-            color: white;
-        }
-        #save-word-btn:hover { background-color: #157347; }
-        #save-word-btn.saved { background-color: #ffc107; color: black; cursor: not-allowed;}
+        /* --- Generic Modal for Lists --- */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-content h2 { margin-top: 0; }
+        .modal-body { max-height: 60vh; overflow-y: auto; }
+        
+        /* Styling for Saved Items List */
+        .saved-list { list-style-type: none; padding: 0; }
+        .saved-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .saved-list li:last-child { border-bottom: none; }
+        .saved-list .item-title { font-weight: bold; }
+        .saved-list .action-btn { background-color: #0d6efd; color: white; font-size: 0.8rem; padding: 5px 10px; }
 
+        #save-word-btn { margin-top: 20px; background-color: #198754; color: white; }
+        #save-word-btn.saved { background-color: #ffc107; color: black; cursor: not-allowed;}
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
         @keyframes slideIn { from {transform: translateY(-50px);} to {transform: translateY(0);} }
-
-        /* --- Responsive Design --- */
-        @media (max-width: 768px) {
-            .container { padding: 1rem; margin: 10px; }
-            .modal-content { width: 95%; margin: 20% auto; }
-        }
+        @media (max-width: 768px) { .container { padding: 1rem; margin: 10px; } .modal-content { width: 95%; margin: 20% auto; } }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Personal Passage Analyzer</h1>
 
-        <div id="drop-zone">
-            <p>Drop PDF, image, or .txt file here, or click to select</p>
-            <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt">
-        </div>
+        <nav class="main-nav">
+            <button id="view-passages-btn" class="btn nav-btn">Saved Passages</button>
+            <button id="view-words-btn" class="btn nav-btn">Saved Words</button>
+        </nav>
 
+        <div id="drop-zone"><p>Drop PDF, image, or .txt file here</p><input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt"></div>
         <textarea id="text-input" placeholder="...or paste a passage here"></textarea>
-
         <div class="controls">
             <button id="process-btn" class="btn">Analyze</button>
+            <button id="save-passage-btn" class="btn">Save Passage</button>
             <button id="clear-btn" class="btn">Clear</button>
         </div>
-        
         <div id="status"></div>
-
         <div id="passage-display"></div>
     </div>
 
-    <!-- Word Lookup Modal -->
+    <!-- Modal for Word Lookup -->
     <div id="word-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2 id="modal-word"></h2>
-            <div id="modal-body"></div>
+            <span class="close-btn">&times;</span><h2 id="modal-word-title"></h2><div id="modal-word-body"></div>
             <button id="save-word-btn" class="btn">Save Word</button>
+        </div>
+    </div>
+
+    <!-- Modal for Displaying Saved Lists (Passages/Words) -->
+    <div id="list-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span><h2 id="list-modal-title"></h2><div id="list-modal-body" class="modal-body"></div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Elements ---
-            const dropZone = document.getElementById('drop-zone');
-            const fileInput = document.getElementById('file-input');
-            const textInput = document.getElementById('text-input');
-            const processBtn = document.getElementById('process-btn');
-            const clearBtn = document.getElementById('clear-btn');
-            const statusDiv = document.getElementById('status');
-            const passageDisplay = document.getElementById('passage-display');
-            const modal = document.getElementById('word-modal');
-            const modalWord = document.getElementById('modal-word');
-            const modalBody = document.getElementById('modal-body');
-            const saveWordBtn = document.getElementById('save-word-btn');
-            const closeModalBtn = document.querySelector('.close-btn');
-
+            // --- DOM Element References ---
+            const dropZone = document.getElementById('drop-zone'); const fileInput = document.getElementById('file-input'); const textInput = document.getElementById('text-input'); const processBtn = document.getElementById('process-btn'); const clearBtn = document.getElementById('clear-btn'); const statusDiv = document.getElementById('status'); const passageDisplay = document.getElementById('passage-display');
+            // Word Modal
+            const wordModal = document.getElementById('word-modal'); const modalWordTitle = document.getElementById('modal-word-title'); const modalWordBody = document.getElementById('modal-word-body'); const saveWordBtn = document.getElementById('save-word-btn');
+            // List Modal
+            const listModal = document.getElementById('list-modal'); const listModalTitle = document.getElementById('list-modal-title'); const listModalBody = document.getElementById('list-modal-body');
+            // New Buttons
+            const savePassageBtn = document.getElementById('save-passage-btn'); const viewPassagesBtn = document.getElementById('view-passages-btn'); const viewWordsBtn = document.getElementById('view-words-btn');
             let currentFile = null;
 
-            // --- Drag and Drop Logic ---
-            dropZone.addEventListener('click', () => fileInput.click());
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
-            });
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-                currentFile = e.dataTransfer.files[0];
-                if (currentFile) {
-                    dropZone.querySelector('p').textContent = `File selected: ${currentFile.name}`;
-                    textInput.value = ''; // Clear text area if file is dropped
-                }
-            });
-            fileInput.addEventListener('change', () => {
-                currentFile = fileInput.files[0];
-                if (currentFile) {
-                    dropZone.querySelector('p').textContent = `File selected: ${currentFile.name}`;
-                    textInput.value = ''; // Clear text area if file is selected
-                }
-            });
-
-            // --- Main Process Logic ---
-            processBtn.addEventListener('click', async () => {
-                let text = textInput.value.trim();
-                passageDisplay.innerHTML = '';
-
-                if (currentFile) {
-                    statusDiv.textContent = 'Processing file...';
-                    try {
-                        const fileText = await extractTextFromFile(currentFile);
-                        displayPassage(fileText);
-                    } catch (error) {
-                        console.error("File processing error:", error);
-                        statusDiv.textContent = 'Error processing file. Please try again.';
-                    }
-                } else if (text) {
-                    statusDiv.textContent = 'Analyzing pasted text...';
-                    displayPassage(text);
-                } else {
-                    statusDiv.textContent = 'Please select a file or paste some text.';
-                }
-            });
-
-            async function extractTextFromFile(file) {
-                const fileType = file.type;
-                if (fileType === 'application/pdf') {
-                    return await extractTextFromPDF(file);
-                } else if (fileType.startsWith('image/')) {
-                    return await extractTextFromImage(file);
-                } else if (fileType === 'text/plain') {
-                    return await file.text();
-                } else {
-                    throw new Error('Unsupported file type.');
-                }
-            }
-
-            // --- Text Extraction Functions ---
-            async function extractTextFromPDF(file) {
-                statusDiv.textContent = 'Extracting text from PDF...';
-                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
-                const loadingTask = pdfjsLib.getDocument(URL.createObjectURL(file));
-                const pdf = await loadingTask.promise;
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
-                }
-                return fullText;
-            }
-
-            async function extractTextFromImage(file) {
-                statusDiv.textContent = 'Recognizing text from image (this may take a moment)...';
-                const worker = await Tesseract.createWorker('eng', 1, {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                           statusDiv.textContent = `Recognizing... ${Math.round(m.progress * 100)}%`;
-                        }
-                    }
-                });
-                const { data: { text } } = await worker.recognize(file);
-                await worker.terminate();
-                return text;
-            }
-
-            // --- Passage Display ---
-            function displayPassage(text) {
-                passageDisplay.innerHTML = '';
-                const fragments = text.split(/(\s+|\n+|,|\.|\?|!|;)/); // Split by spaces, newlines, and punctuation
-                fragments.forEach(fragment => {
-                    if (fragment.trim() !== '') {
-                        const wordSpan = document.createElement('span');
-                        wordSpan.textContent = fragment;
-                        // Only add 'word' class to actual words, not just punctuation
-                        if (/[a-zA-Z]/.test(fragment)) {
-                             wordSpan.className = 'word';
-                        }
-                        passageDisplay.appendChild(wordSpan);
-                    } else {
-                        // Append spaces/newlines as text nodes to preserve formatting
-                        passageDisplay.appendChild(document.createTextNode(fragment));
-                    }
-                });
-                statusDiv.textContent = 'Analysis complete. Click on any word.';
-            }
+            // --- File Handling ---
+            dropZone.addEventListener('click', () => fileInput.click()); dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); }); dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+            dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); currentFile = e.dataTransfer.files[0]; if (currentFile) { dropZone.querySelector('p').textContent = `File selected: ${currentFile.name}`; textInput.value = ''; } });
+            fileInput.addEventListener('change', () => { currentFile = fileInput.files[0]; if (currentFile) { dropZone.querySelector('p').textContent = `File selected: ${currentFile.name}`; textInput.value = ''; } });
+            
+            // --- Main Processing ---
+            processBtn.addEventListener('click', async () => { let text = textInput.value.trim(); passageDisplay.innerHTML = ''; if (currentFile) { statusDiv.textContent = 'Processing file...'; try { const fileText = await extractTextFromFile(currentFile); displayPassage(fileText); } catch (error) { statusDiv.textContent = 'Error processing file.'; } } else if (text) { statusDiv.textContent = 'Analyzing...'; displayPassage(text); } else { statusDiv.textContent = 'Please select a file or paste text.'; } });
+            async function extractTextFromFile(file) { const type = file.type; if (type === 'application/pdf') return await extractTextFromPDF(file); if (type.startsWith('image/')) return await extractTextFromImage(file); if (type === 'text/plain') return await file.text(); throw new Error('Unsupported type.'); }
+            async function extractTextFromPDF(file) { statusDiv.textContent = 'Extracting from PDF...'; pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js`; const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise; let text = ''; for (let i = 1; i <= pdf.numPages; i++) { const page = await pdf.getPage(i); const content = await page.getTextContent(); text += content.items.map(item => item.str).join(' ') + '\n\n'; } return text; }
+            async function extractTextFromImage(file) { statusDiv.textContent = 'Recognizing text...'; const worker = await Tesseract.createWorker('eng', 1, { logger: m => statusDiv.textContent = `Recognizing... ${Math.round(m.progress * 100)}%` }); const { data: { text } } = await worker.recognize(file); await worker.terminate(); return text; }
+            
+            function displayPassage(text) { passageDisplay.innerHTML = ''; const appendArticleBody = (body) => { if (!body.trim()) return; const p = document.createElement('p'); body.split(/(\s+|\b)/).forEach(frag => { const span = document.createElement('span'); span.textContent = frag; if (/[a-zA-Z]/.test(frag)) span.className = 'word'; p.appendChild(span); }); passageDisplay.appendChild(p); }; let currentArticleBody = ''; text.split('\n').forEach(line => { const trimmed = line.trim(); if (!trimmed) return; const isAllCaps = trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed); const isHeadline = isAllCaps && trimmed.split(/\s+/).length > 1 && trimmed.length < 120 && !trimmed.includes('C M Y K'); if (isHeadline) { appendArticleBody(currentArticleBody); currentArticleBody = ''; const h3 = document.createElement('h3'); h3.textContent = trimmed; passageDisplay.appendChild(h3); } else { currentArticleBody += line + ' '; } }); appendArticleBody(currentArticleBody); statusDiv.textContent = 'Analysis complete.'; }
 
             // --- Word Lookup Logic ---
-            passageDisplay.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('word')) {
-                    const word = e.target.textContent.trim().toLowerCase().replace(/[^a-z]/gi, '');
-                    if (word) {
-                        lookupWord(word);
-                    }
+            passageDisplay.addEventListener('click', (e) => { if (e.target.classList.contains('word')) { const word = e.target.textContent.trim().toLowerCase().replace(/[^a-z]/gi, ''); if (word) lookupWord(word); } });
+            async function lookupWord(word) { modalWordTitle.textContent = word; modalWordBody.innerHTML = '<i>Looking up...</i>'; openModal(wordModal); try { const originalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; const proxiedUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(originalApiUrl)}`; const response = await fetch(proxiedUrl); if (!response.ok) throw new Error('Proxy error.'); const blob = await response.json(); if (blob.contents.includes(`"title":"No Definitions Found"`)) { throw new Error('Word not found.'); } const data = JSON.parse(blob.contents); renderWordData(data); updateSaveButton(word); } catch (error) { console.error("Lookup Error:", error); modalWordBody.innerHTML = `<p>Could not find a definition for "<strong>${word}</strong>".</p>`; } }
+            function renderWordData(data) { modalWordBody.innerHTML = ''; data.forEach(entry => entry.meanings.forEach(meaning => { modalWordBody.innerHTML += `<h3>${meaning.partOfSpeech}</h3>`; meaning.definitions.forEach((def, i) => { modalWordBody.innerHTML += `<p><strong>${i + 1}.</strong> ${def.definition}</p>`; if (def.example) modalWordBody.innerHTML += `<p><em>Example: ${def.example}</em></p>`; }); if (meaning.synonyms?.length > 0) modalWordBody.innerHTML += `<p><strong>Synonyms:</strong> ${meaning.synonyms.join(', ')}</p>`; })); }
+            
+            // --- Saving Words ---
+            function getSavedWords() { return JSON.parse(localStorage.getItem('savedWords') || '[]'); }
+            function saveWord(word) { const words = getSavedWords(); if (!words.includes(word)) { words.push(word); localStorage.setItem('savedWords', JSON.stringify(words)); } }
+            function updateSaveButton(word) { const isSaved = getSavedWords().includes(word); saveWordBtn.textContent = isSaved ? 'Saved' : 'Save Word'; saveWordBtn.classList.toggle('saved', isSaved); saveWordBtn.disabled = isSaved; }
+            saveWordBtn.addEventListener('click', () => { const word = modalWordTitle.textContent; saveWord(word); updateSaveButton(word); });
+            
+            // --- NEW: Saving Passages ---
+            savePassageBtn.addEventListener('click', () => {
+                const passageText = passageDisplay.innerText;
+                if (!passageText || passageText.trim().length === 0) {
+                    statusDiv.textContent = "Nothing to save. Please analyze a passage first.";
+                    return;
+                }
+                const title = prompt("Enter a title for this passage:", "Untitled Passage");
+                if (title) {
+                    const savedPassages = JSON.parse(localStorage.getItem('savedPassages') || '[]');
+                    savedPassages.push({ title: title, content: passageText });
+                    localStorage.setItem('savedPassages', JSON.stringify(savedPassages));
+                    statusDiv.textContent = `Passage "${title}" saved successfully!`;
                 }
             });
-            
-            async function lookupWord(word) {
-                modalWord.textContent = word;
-                modalBody.innerHTML = '<i>Looking up...</i>';
-                openModal();
 
-                try {
-                    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-                    if (!response.ok) throw new Error('Word not found');
-                    
-                    const data = await response.json();
-                    renderWordData(data);
-                    updateSaveButton(word);
-                } catch (error) {
-                    modalBody.innerHTML = `<p>Could not find a definition for "<strong>${word}</strong>". Please check the spelling.</p>`;
-                }
-            }
-
-            function renderWordData(data) {
-                modalBody.innerHTML = '';
-                data.forEach(entry => {
-                    entry.meanings.forEach(meaning => {
-                        modalBody.innerHTML += `<h3>${meaning.partOfSpeech}</h3>`;
-                        meaning.definitions.forEach((def, index) => {
-                            modalBody.innerHTML += `<p><strong>${index + 1}.</strong> ${def.definition}</p>`;
-                            if (def.example) {
-                                modalBody.innerHTML += `<p><em>Example: ${def.example}</em></p>`;
-                            }
-                        });
-                        if (meaning.synonyms && meaning.synonyms.length > 0) {
-                            modalBody.innerHTML += `<p><strong>Synonyms:</strong> ${meaning.synonyms.join(', ')}</p>`;
-                        }
-                    });
-                });
-            }
-
-            // --- Word Saving (Local Storage) ---
-            function getSavedWords() {
-                return JSON.parse(localStorage.getItem('savedWords') || '[]');
-            }
-
-            function saveWord(word) {
-                const savedWords = getSavedWords();
-                if (!savedWords.includes(word)) {
-                    savedWords.push(word);
-                    localStorage.setItem('savedWords', JSON.stringify(savedWords));
-                }
-            }
-            
-            function updateSaveButton(word) {
-                const savedWords = getSavedWords();
-                if (savedWords.includes(word)) {
-                    saveWordBtn.textContent = 'Saved';
-                    saveWordBtn.classList.add('saved');
-                    saveWordBtn.disabled = true;
+            // --- NEW: Viewing Saved Passages ---
+            viewPassagesBtn.addEventListener('click', () => {
+                const savedPassages = JSON.parse(localStorage.getItem('savedPassages') || '[]');
+                listModalTitle.textContent = "Saved Passages";
+                if (savedPassages.length === 0) {
+                    listModalBody.innerHTML = "<p>You have no saved passages.</p>";
                 } else {
-                    saveWordBtn.textContent = 'Save Word';
-                    saveWordBtn.classList.remove('saved');
-                    saveWordBtn.disabled = false;
+                    const ul = document.createElement('ul');
+                    ul.className = 'saved-list';
+                    savedPassages.forEach((passage, index) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span class="item-title">${passage.title}</span><button class="btn action-btn" data-index="${index}">Load</button>`;
+                        ul.appendChild(li);
+                    });
+                    listModalBody.innerHTML = '';
+                    listModalBody.appendChild(ul);
                 }
-            }
+                openModal(listModal);
+            });
+            
+            // --- NEW: Viewing Saved Words ---
+            viewWordsBtn.addEventListener('click', () => {
+                const savedWords = getSavedWords();
+                listModalTitle.textContent = "Saved Words";
+                if (savedWords.length === 0) {
+                    listModalBody.innerHTML = "<p>You have no saved words.</p>";
+                } else {
+                    const ul = document.createElement('ul');
+                    ul.className = 'saved-list';
+                    savedWords.sort().forEach(word => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span class="item-title">${word}</span>`;
+                        ul.appendChild(li);
+                    });
+                    listModalBody.innerHTML = '';
+                    listModalBody.appendChild(ul);
+                }
+                openModal(listModal);
+            });
 
-            saveWordBtn.addEventListener('click', () => {
-                const wordToSave = modalWord.textContent;
-                saveWord(wordToSave);
-                updateSaveButton(wordToSave);
+            // --- NEW: Event Listener for loading a saved passage ---
+            listModalBody.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' && e.target.textContent === 'Load') {
+                    const savedPassages = JSON.parse(localStorage.getItem('savedPassages') || '[]');
+                    const passageIndex = e.target.dataset.index;
+                    const passageToLoad = savedPassages[passageIndex];
+                    if (passageToLoad) {
+                        displayPassage(passageToLoad.content);
+                        closeModal(listModal);
+                    }
+                }
             });
 
             // --- Modal Controls ---
-            function openModal() { modal.style.display = "block"; }
-            function closeModal() { modal.style.display = "none"; }
-            closeModalBtn.addEventListener('click', closeModal);
-            window.addEventListener('click', (e) => {
-                if (e.target == modal) closeModal();
+            function openModal(modalElement) { modalElement.style.display = "block"; }
+            function closeModal(modalElement) { modalElement.style.display = "none"; }
+            document.querySelectorAll('.modal .close-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal')));
             });
+            window.addEventListener('click', (e) => { if (e.target.classList.contains('modal')) closeModal(e.target); });
 
-            // --- Clear Button Logic ---
-            clearBtn.addEventListener('click', () => {
-                textInput.value = '';
-                passageDisplay.innerHTML = '';
-                statusDiv.textContent = '';
-                dropZone.querySelector('p').textContent = 'Drop PDF, image, or .txt file here, or click to select';
-                fileInput.value = '';
-                currentFile = null;
-            });
+            // --- General Controls ---
+            clearBtn.addEventListener('click', () => { textInput.value = ''; passageDisplay.innerHTML = ''; statusDiv.textContent = ''; dropZone.querySelector('p').textContent = 'Drop PDF, image, or .txt file here'; fileInput.value = ''; currentFile = null; });
         });
     </script>
-
 </body>
 </html>
