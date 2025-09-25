@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Vocabulary Builder</title>
+    <title>Advanced Vocabulary Builder</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; background-color: #f4f7f9; color: #333; margin: 0; padding: 1rem; }
-        .container { max-width: 800px; margin: 20px auto; padding: 2rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .container { max-width: 800px; margin: 20px auto; padding: 2rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px M5px rgba(0,0,0,0.08); }
         h1 { text-align: center; color: #2c3e50; margin-bottom: 1rem; }
-        .nav-area { text-align: center; margin-bottom: 2rem; }
+        .nav-area { text-align: center; margin-bottom: 2rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         
         #word-input { width: 100%; min-height: 120px; padding: 12px; border: 2px solid #dde3e8; border-radius: 6px; resize: vertical; font-size: 1rem; margin-bottom: 1rem; box-sizing: border-box; }
         #word-input:focus { border-color: #3498db; outline: none; }
@@ -16,44 +16,49 @@
         .controls { display: flex; justify-content: center; gap: 1rem; }
         .btn { padding: 12px 25px; font-size: 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; }
         #fetch-btn { background-color: #3498db; color: white; }
-        #fetch-btn:hover { background-color: #2980b9; }
         #view-saved-btn { background-color: #f1c40f; color: #fff; }
-        #view-saved-btn:hover { background-color: #f39c12; }
+        #export-txt-btn { background-color: #9b59b6; color: white; }
+        #export-csv-btn { background-color: #16a085; color: white; }
+        #import-btn { background-color: #e67e22; color: white; }
         
-        #status { text-align: center; color: #7f8c8d; min-height: 24px; margin-top: 1.5rem; }
+        #status { text-align: center; color: #7f8c8d; min-height: 24px; margin-top: 1.5rem; font-weight: bold; }
 
         /* Results Area */
         #results-container { margin-top: 2rem; }
         .word-card { background-color: #fff; border: 1px solid #ecf0f1; border-radius: 8px; padding: 20px; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 10px; }
         .word-card h3 { margin: 0; color: #2c3e50; font-size: 1.5rem; }
-        .word-card p { margin: 0; color: #555; }
+        .word-card .definition, .word-card .synonyms { margin: 0; color: #555; }
         .word-card .synonyms { font-style: italic; color: #7f8c8d; }
         .word-card .actions { margin-top: 10px; display: flex; gap: 10px; }
         .word-card .action-btn { font-size: 0.8rem; padding: 6px 12px; }
-        .save-btn { background-color: #2ecc71; color: white; }
-        .save-btn:hover { background-color: #27ae60; }
+        .save-btn { background-color: #2ecc71; }
         .save-btn.saved { background-color: #bdc3c7; cursor: not-allowed; }
-        .delete-btn { background-color: #e74c3c; color: white; }
-        .delete-btn:hover { background-color: #c0392b; }
+        .delete-btn { background-color: #e74c3c; }
 
         /* Modal for Saved Words */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); animation: fadeIn 0.3s; }
-        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s; }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s; }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .modal-content h2 { margin-top: 0; }
-        #saved-words-list { list-style: none; padding: 0; }
-        #saved-words-list li { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        #saved-words-list .delete-saved-btn { background-color: #e74c3c; color: white; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; }
+        #saved-words-list { list-style: none; padding: 0; max-height: 50vh; overflow-y: auto; }
+        #saved-words-list li { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        #saved-words-list .word-name { flex-grow: 1; font-weight: bold; }
+        #saved-words-list .saved-actions button { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; }
+        .show-saved-btn { background-color: #3498db; }
+        .delete-saved-btn { background-color: #e74c3c; }
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
         @keyframes slideIn { from {transform: translateY(-50px);} to {transform: translateY(0);} }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h1>Quick Vocabulary Builder</h1>
+        <h1>Advanced Vocabulary Builder</h1>
         <div class="nav-area">
-            <button id="view-saved-btn" class="btn">View Saved Words</button>
+            <button id="view-saved-btn" class="btn">View Saved</button>
+            <button id="export-txt-btn" class="btn">Export (TXT)</button>
+            <button id="export-csv-btn" class="btn">Export (CSV)</button>
+            <button id="import-btn" class="btn">Import</button>
+            <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
         </div>
         <textarea id="word-input" placeholder="Paste words here, separated by spaces..."></textarea>
         <div class="controls">
@@ -75,78 +80,41 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM Elements ---
-            const wordInput = document.getElementById('word-input');
-            const fetchBtn = document.getElementById('fetch-btn');
-            const viewSavedBtn = document.getElementById('view-saved-btn');
-            const statusDiv = document.getElementById('status');
-            const resultsContainer = document.getElementById('results-container');
-            const savedWordsModal = document.getElementById('saved-words-modal');
-            const closeModalBtn = savedWordsModal.querySelector('.close-btn');
-            const savedWordsList = document.getElementById('saved-words-list');
+            const wordInput = document.getElementById('word-input'); const fetchBtn = document.getElementById('fetch-btn'); const viewSavedBtn = document.getElementById('view-saved-btn'); const statusDiv = document.getElementById('status'); const resultsContainer = document.getElementById('results-container');
+            const savedWordsModal = document.getElementById('saved-words-modal'); const closeModalBtn = savedWordsModal.querySelector('.close-btn'); const savedWordsList = document.getElementById('saved-words-list');
+            const exportTxtBtn = document.getElementById('export-txt-btn'); const exportCsvBtn = document.getElementById('export-csv-btn'); const importBtn = document.getElementById('import-btn'); const importFileInput = document.getElementById('import-file-input');
+            const STORAGE_KEY = 'savedVocabObjects';
 
             // --- Event Listeners ---
-            fetchBtn.addEventListener('click', handleFetch);
-            viewSavedBtn.addEventListener('click', showSavedWordsModal);
-            closeModalBtn.addEventListener('click', () => savedWordsModal.style.display = 'none');
-            window.addEventListener('click', (e) => { if (e.target === savedWordsModal) savedWordsModal.style.display = 'none'; });
-            
-            // Use event delegation for dynamically created buttons
-            resultsContainer.addEventListener('click', handleResultAction);
-            savedWordsList.addEventListener('click', handleDeleteSavedWord);
+            fetchBtn.addEventListener('click', handleFetch); viewSavedBtn.addEventListener('click', showSavedWordsModal); closeModalBtn.addEventListener('click', () => savedWordsModal.style.display = 'none'); window.addEventListener('click', (e) => { if (e.target === savedWordsModal) savedWordsModal.style.display = 'none'; });
+            resultsContainer.addEventListener('click', handleResultAction); savedWordsList.addEventListener('click', handleSavedListAction);
+            exportTxtBtn.addEventListener('click', handleExportTXT); exportCsvBtn.addEventListener('click', handleExportCSV); importBtn.addEventListener('click', () => importFileInput.click()); importFileInput.addEventListener('change', handleImport);
 
             // --- Core Functions ---
             async function handleFetch() {
-                const text = wordInput.value.trim();
-                if (!text) {
-                    statusDiv.textContent = 'Please paste some words first.';
-                    return;
-                }
-                
-                resultsContainer.innerHTML = ''; // Clear previous results
-                statusDiv.textContent = 'Fetching definitions...';
-
-                const words = text.split(/\s+/).filter(word => word.length > 0);
-                const uniqueWords = [...new Set(words)]; // Get unique words
-
-                for (const word of uniqueWords) {
-                    const data = await getWordDefinition(word.toLowerCase());
-                    renderWordResult(word, data);
-                }
-                statusDiv.textContent = `Fetched ${uniqueWords.length} unique words.`;
+                const text = wordInput.value.trim(); if (!text) { statusDiv.textContent = 'Please paste some words first.'; return; }
+                resultsContainer.innerHTML = ''; statusDiv.textContent = 'Fetching definitions...';
+                const words = [...new Set(text.split(/\s+/).filter(word => word.length > 0))];
+                for (const word of words) { const data = await getWordDefinition(word.toLowerCase()); renderWordResult(word, data); }
+                statusDiv.textContent = `Fetched ${words.length} unique words.`;
             }
             
             async function getWordDefinition(word) {
                 try {
-                    const originalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
-                    const proxiedUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(originalApiUrl)}`;
-                    const response = await fetch(proxiedUrl);
-                    if (!response.ok) return { error: 'API Error' };
-                    const blob = await response.json();
-                    if (blob.contents.includes(`"title":"No Definitions Found"`)) {
-                        return { error: 'No definition found.' };
-                    }
-                    const data = JSON.parse(blob.contents);
-                    const firstMeaning = data[0]?.meanings[0];
+                    const originalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; const proxiedUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(originalApiUrl)}`; const response = await fetch(proxiedUrl); if (!response.ok) return { error: 'API Error' };
+                    const blob = await response.json(); if (blob.contents.includes(`"title":"No Definitions Found"`)) return { error: 'No definition found.' };
+                    const data = JSON.parse(blob.contents); const firstMeaning = data[0]?.meanings[0];
                     const definition = firstMeaning?.definitions[0]?.definition || 'No definition available.';
-                    const synonyms = firstMeaning?.synonyms?.slice(0, 5).join(', ') || 'None';
+                    const synonyms = firstMeaning?.synonyms?.slice(0, 10).join(', ') || 'None';
                     return { definition, synonyms };
-                } catch (error) {
-                    return { error: 'Failed to fetch.' };
-                }
+                } catch (error) { return { error: 'Failed to fetch.' }; }
             }
             
             function renderWordResult(word, data) {
-                const card = document.createElement('div');
-                card.className = 'word-card';
-                
-                let definitionHTML = `<p>${data.definition}</p>`;
-                if (data.error) {
-                    definitionHTML = `<p style="color: #e74c3c;">${data.error}</p>`;
-                }
-                
-                const savedWords = getSavedWords();
-                const isSaved = savedWords.includes(word.toLowerCase());
-                
+                const card = document.createElement('div'); card.className = 'word-card';
+                let definitionHTML = `<p class="definition">${data.definition}</p>`;
+                if (data.error) { definitionHTML = `<p class="definition" style="color: #e74c3c;">${data.error}</p>`; }
+                const isSaved = getSavedWords().some(item => item.word === word.toLowerCase());
                 card.innerHTML = `
                     <h3>${word}</h3>
                     ${definitionHTML}
@@ -164,60 +132,141 @@
             function handleResultAction(e) {
                 const target = e.target;
                 if (target.classList.contains('save-btn')) {
+                    const card = target.closest('.word-card');
                     const word = target.dataset.word;
-                    saveWord(word.toLowerCase());
-                    target.textContent = 'Saved';
-                    target.classList.add('saved');
-                    target.disabled = true;
+                    const definition = card.querySelector('.definition').textContent;
+                    const synonyms = card.querySelector('.synonyms').textContent.replace('Synonyms: ', '');
+                    saveWord({ word: word.toLowerCase(), definition, synonyms });
+                    target.textContent = 'Saved'; target.classList.add('saved'); target.disabled = true;
                 } else if (target.classList.contains('delete-btn')) {
                     target.closest('.word-card').remove();
                 }
             }
 
-            function handleDeleteSavedWord(e) {
+            function handleSavedListAction(e) {
                 if (e.target.classList.contains('delete-saved-btn')) {
-                    const word = e.target.dataset.word;
-                    deleteSavedWord(word);
-                    showSavedWordsModal(); // Refresh the list
+                    deleteSavedWord(e.target.dataset.word); showSavedWordsModal();
+                } else if (e.target.classList.contains('show-saved-btn')) {
+                    const wordData = getSavedWords().find(item => item.word === e.target.dataset.word);
+                    if (wordData) { alert(`Word: ${wordData.word}\n\nDefinition: ${wordData.definition}\n\nSynonyms: ${wordData.synonyms}`); }
                 }
             }
 
             // --- Local Storage Functions ---
-            function getSavedWords() {
-                return JSON.parse(localStorage.getItem('savedVocabWords') || '[]');
-            }
-
-            function saveWord(word) {
-                const savedWords = getSavedWords();
-                if (!savedWords.includes(word)) {
-                    savedWords.push(word);
-                    localStorage.setItem('savedVocabWords', JSON.stringify(savedWords));
-                }
-            }
-
-            function deleteSavedWord(word) {
-                let savedWords = getSavedWords();
-                savedWords = savedWords.filter(w => w !== word);
-                localStorage.setItem('savedVocabWords', JSON.stringify(savedWords));
-            }
+            function getSavedWords() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+            function saveWord(wordObject) { const savedWords = getSavedWords(); if (!savedWords.some(item => item.word === wordObject.word)) { savedWords.push(wordObject); localStorage.setItem(STORAGE_KEY, JSON.stringify(savedWords)); } }
+            function deleteSavedWord(word) { let savedWords = getSavedWords(); savedWords = savedWords.filter(item => item.word !== word); localStorage.setItem(STORAGE_KEY, JSON.stringify(savedWords)); }
 
             // --- Modal Functions ---
             function showSavedWordsModal() {
-                const savedWords = getSavedWords();
-                savedWordsList.innerHTML = ''; // Clear current list
-                if (savedWords.length === 0) {
-                    savedWordsList.innerHTML = '<li>No words saved yet.</li>';
-                } else {
-                    savedWords.sort().forEach(word => {
+                const savedWords = getSavedWords(); savedWordsList.innerHTML = '';
+                if (savedWords.length === 0) { savedWordsList.innerHTML = '<li>No words saved yet.</li>'; } 
+                else {
+                    savedWords.sort((a, b) => a.word.localeCompare(b.word)).forEach(item => {
                         const li = document.createElement('li');
                         li.innerHTML = `
-                            <span>${word}</span>
-                            <button class="btn delete-saved-btn" data-word="${word}">Delete</button>
+                            <span class="word-name">${item.word}</span>
+                            <div class="saved-actions">
+                                <button class="btn show-saved-btn" data-word="${item.word}">Show</button>
+                                <button class="btn delete-saved-btn" data-word="${item.word}">Delete</button>
+                            </div>
                         `;
                         savedWordsList.appendChild(li);
                     });
                 }
                 savedWordsModal.style.display = 'block';
+            }
+
+            // --- NEW: Export & Import Functions ---
+            function handleExportTXT() {
+                const savedWords = getSavedWords(); if (savedWords.length === 0) { alert("No saved words to export."); return; }
+                let textContent = "My Vocabulary List\n\n";
+                savedWords.forEach(item => {
+                    textContent += `Word: ${item.word}\n`;
+                    textContent += `Definition: ${item.definition}\n`;
+                    textContent += `Synonyms: ${item.synonyms}\n\n`;
+                });
+                downloadFile(textContent, 'vocabulary.txt', 'text/plain');
+            }
+
+            function handleExportCSV() {
+                const savedWords = getSavedWords(); if (savedWords.length === 0) { alert("No saved words to export."); return; }
+                let csvContent = '"Word","Definition","Synonyms"\n';
+                savedWords.forEach(item => {
+                    const row = [`"${item.word}"`, `"${item.definition.replace(/"/g, '""')}"`, `"${item.synonyms.replace(/"/g, '""')}"`];
+                    csvContent += row.join(',') + '\n';
+                });
+                downloadFile(csvContent, 'vocabulary.csv', 'text/csv');
+            }
+
+            function downloadFile(content, fileName, mimeType) {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([content], { type: mimeType }));
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            }
+            
+            function handleImport() {
+                const file = importFileInput.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const content = event.target.result;
+                    try {
+                        if (file.name.endsWith('.csv')) { parseAndMergeCSV(content); }
+                        else { parseAndMergeTXT(content); }
+                    } catch (e) { alert("Failed to parse the file. Please ensure it's in the correct format."); console.error(e); }
+                };
+                reader.readAsText(file);
+                importFileInput.value = ''; // Reset for next import
+            }
+
+            function parseAndMergeTXT(content) {
+                const entries = content.split('\n\n'); let importedCount = 0;
+                const newWords = [];
+                entries.forEach(entry => {
+                    if (!entry.includes('Word:')) return;
+                    const wordMatch = entry.match(/Word: (.*)/);
+                    const defMatch = entry.match(/Definition: (.*)/);
+                    const synMatch = entry.match(/Synonyms: (.*)/);
+                    if (wordMatch && defMatch) {
+                        newWords.push({
+                            word: wordMatch[1].trim().toLowerCase(),
+                            definition: defMatch[1].trim(),
+                            synonyms: synMatch ? synMatch[1].trim() : 'None'
+                        });
+                    }
+                });
+                mergeWords(newWords);
+            }
+
+            function parseAndMergeCSV(content) {
+                const rows = content.split('\n').slice(1); // Skip header
+                const newWords = [];
+                rows.forEach(row => {
+                    const cols = row.split('","'); // Simple parse, assumes format is consistent
+                    if (cols.length === 3) {
+                        newWords.push({
+                            word: cols[0].replace(/"/g, '').trim().toLowerCase(),
+                            definition: cols[1].replace(/"/g, '').trim(),
+                            synonyms: cols[2].replace(/"/g, '').trim()
+                        });
+                    }
+                });
+                mergeWords(newWords);
+            }
+
+            function mergeWords(newWords) {
+                const existingWords = getSavedWords();
+                const existingWordSet = new Set(existingWords.map(item => item.word));
+                let importedCount = 0;
+                newWords.forEach(newWord => {
+                    if (newWord.word && !existingWordSet.has(newWord.word)) {
+                        existingWords.push(newWord);
+                        importedCount++;
+                    }
+                });
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(existingWords));
+                alert(`Import complete! Added ${importedCount} new words.`);
             }
         });
     </script>
