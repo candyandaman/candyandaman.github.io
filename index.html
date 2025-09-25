@@ -28,8 +28,8 @@
         #fetch-btn { background-color: var(--accent-blue); }
         #clear-input-btn { background-color: #616161; }
         #view-saved-btn { background-color: var(--accent-yellow); color: #121212; }
-        #quick-copy-btn { background-color: var(--accent-purple); } /* NEW Quick Copy Button */
-        #data-mgmt-btn { background-color: var(--accent-orange); } /* Data Tools Button */
+        #quick-copy-btn { background-color: var(--accent-purple); }
+        #data-mgmt-btn { background-color: var(--accent-orange); }
         
         #status { text-align: center; color: var(--text-secondary); min-height: 24px; margin-top: 1.5rem; font-weight: bold; }
 
@@ -39,9 +39,9 @@
         .word-card h3 { color: var(--accent-blue); }
         .word-card .actions { margin-top: 10px; display: flex; gap: 10px; }
         .word-card .action-btn { font-size: 0.8rem; padding: 6px 12px; }
-        .word-card .save-btn { background-color: var(--accent-green); } /* RESTORED COLOR */
-        .word-card .save-btn.saved { background-color: #424242; cursor: not-allowed; } /* RESTORED COLOR */
-        .word-card .delete-btn { background-color: var(--accent-red); } /* RESTORED COLOR */
+        .word-card .save-btn { background-color: var(--accent-green); }
+        .word-card .save-btn.saved { background-color: #424242; cursor: not-allowed; }
+        .word-card .delete-btn { background-color: var(--accent-red); }
 
         /* Saved Words Screen Table */
         .back-nav { margin-bottom: 1.5rem; }
@@ -146,14 +146,27 @@
 
             function renderSavedWordsTable() { let words = getSavedWords(); words.sort((a, b) => (b.isFavorite - a.isFavorite) || a.word.localeCompare(b.word)); savedWordsTbody.innerHTML = ''; if (words.length === 0) { savedWordsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No words saved yet.</td></tr>'; } else { words.forEach(item => { const row = savedWordsTbody.insertRow(); row.className = item.isFavorite ? 'is-favorite' : ''; const favIcon = item.isFavorite ? '★' : '☆'; const favClass = item.isFavorite ? 'favorited' : ''; row.innerHTML = `<td><button class="action-btn favorite-btn ${favClass}" data-word="${item.word}">${favIcon}</button></td><td>${item.word}</td><td>${item.definition}</td><td>${item.synonyms}</td><td><button class="action-btn move-top-btn" title="Move to Top" data-word="${item.word}">▲</button><button class="action-btn delete-saved-btn" title="Delete" data-word="${item.word}">🗑️</button></td>`; }); } }
             
-            function handleQuickCopy() {
-                const words = getSavedWords(); if (words.length === 0) { statusDiv.textContent = "No words to copy."; return; }
-                const text = words.map(item => item.word).join('\n');
-                navigator.clipboard.writeText(text).then(() => { statusDiv.textContent = `Copied ${words.length} words to clipboard!`; }).catch(err => { statusDiv.textContent = 'Failed to copy.'; });
+            function handleQuickCopy() { const words = getSavedWords(); if (words.length === 0) { statusDiv.textContent = "No words to copy."; return; } const text = words.map(item => item.word).join('\n'); navigator.clipboard.writeText(text).then(() => { statusDiv.textContent = `Copied ${words.length} words to clipboard!`; }).catch(err => { statusDiv.textContent = 'Failed to copy.'; }); }
+            function handleExportTXT() { const words = getSavedWords(); if (words.length === 0) { alert("No words to export."); return; } let content = ""; words.forEach(item => { content += `Word: ${item.word}\nDefinition: ${item.definition}\nSynonyms: ${item.synonyms}\nFavorite: ${item.isFavorite ? 'Yes' : 'No'}\n\n`; }); shareOrDownload(content, 'vocabulary.txt', 'text/plain'); }
+            function handleExportCSV() { const words = getSavedWords(); if (words.length === 0) { alert("No words to export."); return; } let content = '"Word","Definition","Synonyms","Favorite"\n'; words.forEach(item => { const row = [`"${item.word}"`, `"${item.definition.replace(/"/g, '""')}"`, `"${item.synonyms.replace(/"/g, '""')}"`, `"${item.isFavorite}"`]; content += row.join(',') + '\n'; }); shareOrDownload(content, 'vocabulary.csv', 'text/csv'); }
+            
+            // --- NEW: Universal Share/Download Function ---
+            async function shareOrDownload(content, fileName, mimeType) {
+                const blob = new Blob([content], { type: mimeType });
+                // Mobile-first approach: Try the Share API
+                if (navigator.share && navigator.canShare) {
+                    const file = new File([blob], fileName, { type: mimeType });
+                    try {
+                        await navigator.share({ files: [file], title: fileName });
+                        return; // Exit if share is successful
+                    } catch (err) {
+                        console.log("Share cancelled or failed:", err); // Fail silently if user cancels
+                    }
+                }
+                // Fallback for desktop or unsupported mobile browsers
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName; a.click();
             }
-            function handleExportTXT() { const words = getSavedWords(); if (words.length === 0) { alert("No words to export."); return; } let content = ""; words.forEach(item => { content += `Word: ${item.word}\nDefinition: ${item.definition}\nSynonyms: ${item.synonyms}\nFavorite: ${item.isFavorite ? 'Yes' : 'No'}\n\n`; }); downloadFile(content, 'vocabulary.txt', 'text/plain'); }
-            function handleExportCSV() { const words = getSavedWords(); if (words.length === 0) { alert("No words to export."); return; } let content = '"Word","Definition","Synonyms","Favorite"\n'; words.forEach(item => { const row = [`"${item.word}"`, `"${item.definition.replace(/"/g, '""')}"`, `"${item.synonyms.replace(/"/g, '""')}"`, `"${item.isFavorite}"`]; content += row.join(',') + '\n'; }); downloadFile(content, 'vocabulary.csv', 'text/csv'); }
-            function downloadFile(content, fileName, mimeType) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type: mimeType })); a.download = fileName; a.click(); }
+
             function handleImport() { const file = importFileInput.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { if (file.name.endsWith('.csv')) { parseAndMergeCSV(e.target.result); } else { parseAndMergeTXT(e.target.result); } } catch (err) { alert("Failed to parse file."); } }; reader.readAsText(file); importFileInput.value = ''; }
             function parseAndMergeTXT(content) { const newWords = []; const entries = content.split('\n\n'); entries.forEach(entry => { if (!entry.includes('Word:')) return; const wordMatch = entry.match(/Word: (.*)/); const defMatch = entry.match(/Definition: (.*)/); const synMatch = entry.match(/Synonyms: (.*)/); const favMatch = entry.match(/Favorite: (Yes|No)/); if (wordMatch && defMatch) { newWords.push({ word: wordMatch[1].trim().toLowerCase(), definition: defMatch[1].trim(), synonyms: synMatch ? synMatch[1].trim() : 'None', isFavorite: favMatch ? favMatch[1] === 'Yes' : false }); } }); mergeWords(newWords); }
             function parseAndMergeCSV(content) { const newWords = []; const rows = content.split('\n').slice(1); rows.forEach(row => { const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || []; if (cols.length >= 3) { newWords.push({ word: cols[0].replace(/"/g, '').trim().toLowerCase(), definition: cols[1].replace(/"/g, '').trim(), synonyms: cols[2].replace(/"/g, '').trim(), isFavorite: cols[3] ? cols[3].replace(/"/g, '').trim().toLowerCase() === 'true' : false }); } }); mergeWords(newWords); }
