@@ -3,123 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Vocabulary Builder</title>
+    <title>Dark Vocabulary Builder</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; background-color: #f4f7f9; color: #333; margin: 0; padding: 1rem; }
-        .container { max-width: 900px; margin: 20px auto; padding: 2rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 1rem; }
-        .nav-area { text-align: center; margin-bottom: 2rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        :root {
+            --bg-main: #121212; --bg-surface: #1e1e1e; --bg-card: #2a2a2a;
+            --text-primary: #e0e0e0; --text-secondary: #a0a0a0;
+            --border-color: #383838; --accent-blue: #2979ff; --accent-green: #00c853;
+            --accent-red: #ff3d00; --accent-yellow: #ffd600; --accent-purple: #ab47bc;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; background-color: var(--bg-main); color: var(--text-primary); margin: 0; padding: 1rem; }
+        .container { max-width: 900px; margin: 20px auto; padding: 2rem; background-color: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); }
+        h1, h2 { text-align: center; color: var(--text-primary); margin-bottom: 1rem; }
         
-        #word-input { width: 100%; min-height: 120px; padding: 12px; border: 2px solid #dde3e8; border-radius: 6px; resize: vertical; font-size: 1rem; margin-bottom: 1rem; box-sizing: border-box; }
-        #word-input:focus { border-color: #3498db; outline: none; }
+        /* --- Screen Management --- */
+        .screen { display: block; } /* Home screen is visible by default */
+        #saved-words-screen { display: none; } /* Saved words screen is hidden */
+
+        .nav-area { text-align: center; margin-bottom: 2rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        #word-input { width: 100%; min-height: 120px; padding: 12px; background-color: var(--bg-card); color: var(--text-primary); border: 2px solid var(--border-color); border-radius: 6px; resize: vertical; font-size: 1rem; margin-bottom: 1rem; box-sizing: border-box; }
+        #word-input:focus { border-color: var(--accent-blue); outline: none; }
         
         .controls { display: flex; justify-content: center; gap: 1rem; }
         .btn { padding: 12px 25px; font-size: 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; color: white; }
-        #fetch-btn { background-color: #3498db; }
-        #view-saved-btn { background-color: #f1c40f; }
-        #export-txt-btn { background-color: #9b59b6; }
-        #export-csv-btn { background-color: #16a085; }
-        #import-btn { background-color: #e67e22; }
+        #fetch-btn { background-color: var(--accent-blue); }
+        #clear-input-btn { background-color: #616161; } /* Clear Input Button */
+        #view-saved-btn { background-color: var(--accent-yellow); color: #121212; }
+        #quick-export-btn { background-color: var(--accent-purple); } /* Quick Export Button */
         
-        #status { text-align: center; color: #7f8c8d; min-height: 24px; margin-top: 1.5rem; font-weight: bold; }
+        #status { text-align: center; color: var(--text-secondary); min-height: 24px; margin-top: 1.5rem; font-weight: bold; }
 
         /* Results Area */
         #results-container { margin-top: 2rem; }
-        .word-card { background-color: #fff; border: 1px solid #ecf0f1; border-radius: 8px; padding: 20px; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 10px; }
-        .word-card h3 { margin: 0; color: #2c3e50; font-size: 1.5rem; }
-        .word-card .definition, .word-card .synonyms { margin: 0; color: #555; }
-        .word-card .synonyms { font-style: italic; color: #7f8c8d; }
+        .word-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 10px; }
+        .word-card h3 { margin: 0; color: var(--accent-blue); font-size: 1.5rem; }
+        .word-card .definition { margin: 0; }
+        .word-card .synonyms { font-style: italic; color: var(--text-secondary); }
         .word-card .actions { margin-top: 10px; display: flex; gap: 10px; }
         .word-card .action-btn { font-size: 0.8rem; padding: 6px 12px; }
-        .save-btn { background-color: #2ecc71; }
-        .save-btn.saved { background-color: #bdc3c7; cursor: not-allowed; }
-        .delete-btn { background-color: #e74c3c; }
+        .save-btn { background-color: var(--accent-green); }
+        .save-btn.saved { background-color: #424242; cursor: not-allowed; }
+        .delete-btn { background-color: var(--accent-red); }
 
-        /* --- NEW: Saved Words Table Area --- */
-        #saved-words-area {
-            display: none; /* Initially hidden */
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 2px solid #dde3e8;
-        }
-        #saved-words-area h2 { text-align: center; color: #2c3e50; }
-        .saved-words-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .saved-words-table th, .saved-words-table td {
-            padding: 12px;
-            border: 1px solid #ecf0f1;
-            text-align: left;
-            vertical-align: top;
-        }
-        .saved-words-table th { background-color: #ecf0f1; font-weight: bold; }
-        .saved-words-table tr:nth-child(even) { background-color: #f9fafb; }
-        .saved-words-table td:first-child { font-weight: bold; } /* Word column */
-        .saved-words-table .saved-actions button {
-            font-size: 0.75rem; padding: 5px 10px; border-radius: 4px; margin-right: 5px;
-        }
-        .show-saved-btn { background-color: #3498db; }
-        .delete-saved-btn { background-color: #e74c3c; }
+        /* Saved Words Screen Table */
+        .back-nav { margin-bottom: 1.5rem; }
+        #back-btn { background-color: #616161; font-size: 1rem; }
+        .saved-words-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .saved-words-table th, .saved-words-table td { padding: 12px; border: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+        .saved-words-table th { background-color: var(--bg-card); font-weight: bold; }
+        .saved-words-table td:first-child { font-weight: bold; color: var(--accent-yellow); }
+        .saved-words-table .delete-saved-btn { font-size: 0.8rem; padding: 5px 10px; border-radius: 4px; background-color: var(--accent-red); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Advanced Vocabulary Builder</h1>
-        <div class="nav-area">
-            <button id="view-saved-btn" class="btn">View Saved</button>
-            <button id="export-txt-btn" class="btn">Export (TXT)</button>
-            <button id="export-csv-btn" class="btn">Export (CSV)</button>
-            <button id="import-btn" class="btn">Import</button>
-            <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
-        </div>
-        <textarea id="word-input" placeholder="Paste words here, separated by spaces..."></textarea>
-        <div class="controls">
-            <button id="fetch-btn" class="btn">Fetch Definitions</button>
-        </div>
-        <div id="status"></div>
-        <div id="results-container"></div>
         
-        <!-- NEW: Inline Saved Words Section -->
-        <div id="saved-words-area">
+        <!-- === HOME SCREEN === -->
+        <div id="home-screen" class="screen">
+            <h1>Dark Vocabulary Builder</h1>
+            <div class="nav-area">
+                <button id="view-saved-btn" class="btn">View Saved Words</button>
+                <button id="quick-export-btn" class="btn">Copy Saved Words</button>
+            </div>
+            <textarea id="word-input" placeholder="Paste words here, separated by spaces..."></textarea>
+            <div class="controls">
+                <button id="fetch-btn" class="btn">Fetch Definitions</button>
+                <button id="clear-input-btn" class="btn">Clear Input</button>
+            </div>
+            <div id="status"></div>
+            <div id="results-container"></div>
+        </div>
+
+        <!-- === SAVED WORDS SCREEN === -->
+        <div id="saved-words-screen" class="screen">
+            <div class="back-nav">
+                <button id="back-btn" class="btn">&larr; Back to Home</button>
+            </div>
             <h2>Saved Words</h2>
             <table class="saved-words-table">
                 <thead>
-                    <tr>
-                        <th>Word</th>
-                        <th>Definition</th>
-                        <th>Synonyms</th>
-                        <th>Actions</th>
-                    </tr>
+                    <tr><th>Word</th><th>Definition</th><th>Synonyms</th><th>Action</th></tr>
                 </thead>
-                <tbody id="saved-words-tbody">
-                    <!-- Words will be dynamically inserted here -->
-                </tbody>
+                <tbody id="saved-words-tbody"></tbody>
             </table>
         </div>
+
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM Elements ---
-            const wordInput = document.getElementById('word-input'); const fetchBtn = document.getElementById('fetch-btn'); const viewSavedBtn = document.getElementById('view-saved-btn'); const statusDiv = document.getElementById('status'); const resultsContainer = document.getElementById('results-container');
-            const exportTxtBtn = document.getElementById('export-txt-btn'); const exportCsvBtn = document.getElementById('export-csv-btn'); const importBtn = document.getElementById('import-btn'); const importFileInput = document.getElementById('import-file-input');
-            const savedWordsArea = document.getElementById('saved-words-area'); const savedWordsTbody = document.getElementById('saved-words-tbody');
-            const STORAGE_KEY = 'savedVocabObjects';
-            let isSavedWordsVisible = false;
+            const homeScreen = document.getElementById('home-screen');
+            const savedWordsScreen = document.getElementById('saved-words-screen');
+            const wordInput = document.getElementById('word-input');
+            const fetchBtn = document.getElementById('fetch-btn');
+            const clearInputBtn = document.getElementById('clear-input-btn');
+            const viewSavedBtn = document.getElementById('view-saved-btn');
+            const quickExportBtn = document.getElementById('quick-export-btn');
+            const backBtn = document.getElementById('back-btn');
+            const statusDiv = document.getElementById('status');
+            const resultsContainer = document.getElementById('results-container');
+            const savedWordsTbody = document.getElementById('saved-words-tbody');
+            const STORAGE_KEY = 'savedVocabObjectsDark';
 
             // --- Event Listeners ---
-            fetchBtn.addEventListener('click', handleFetch); viewSavedBtn.addEventListener('click', toggleSavedWordsView);
-            resultsContainer.addEventListener('click', handleResultAction); savedWordsTbody.addEventListener('click', handleSavedListAction);
-            exportTxtBtn.addEventListener('click', handleExportTXT); exportCsvBtn.addEventListener('click', handleExportCSV); importBtn.addEventListener('click', () => importFileInput.click()); importFileInput.addEventListener('change', handleImport);
+            fetchBtn.addEventListener('click', handleFetch);
+            clearInputBtn.addEventListener('click', () => { wordInput.value = ''; });
+            viewSavedBtn.addEventListener('click', showSavedWordsScreen);
+            backBtn.addEventListener('click', showHomeScreen);
+            quickExportBtn.addEventListener('click', handleQuickExport);
+            resultsContainer.addEventListener('click', handleResultAction);
+            savedWordsTbody.addEventListener('click', handleSavedListAction);
+
+            // --- Screen Navigation ---
+            function showHomeScreen() {
+                homeScreen.style.display = 'block';
+                savedWordsScreen.style.display = 'none';
+            }
+            function showSavedWordsScreen() {
+                homeScreen.style.display = 'none';
+                savedWordsScreen.style.display = 'block';
+                renderSavedWordsTable();
+            }
 
             // --- Core Functions ---
             async function handleFetch() {
                 const text = wordInput.value.trim(); if (!text) { statusDiv.textContent = 'Please paste some words first.'; return; }
                 resultsContainer.innerHTML = ''; statusDiv.textContent = 'Fetching definitions...';
                 const words = [...new Set(text.split(/\s+/).filter(word => word.length > 0))];
-                for (const word of words) { const data = await getWordDefinition(word.toLowerCase()); renderWordResult(word, data); }
+                await Promise.all(words.map(async (word) => {
+                    const data = await getWordDefinition(word.toLowerCase());
+                    renderWordResult(word, data);
+                }));
                 statusDiv.textContent = `Fetched ${words.length} unique words.`;
             }
             
@@ -135,7 +149,7 @@
             
             function renderWordResult(word, data) {
                 const card = document.createElement('div'); card.className = 'word-card';
-                let definitionHTML = `<p class="definition">${data.definition}</p>`; if (data.error) { definitionHTML = `<p class="definition" style="color: #e74c3c;">${data.error}</p>`; }
+                let definitionHTML = `<p class="definition">${data.definition}</p>`; if (data.error) { definitionHTML = `<p class="definition" style="color: var(--accent-red);">${data.error}</p>`; }
                 const isSaved = getSavedWords().some(item => item.word === word.toLowerCase());
                 card.innerHTML = `<h3>${word}</h3>${definitionHTML}<p class="synonyms"><strong>Synonyms:</strong> ${data.synonyms || 'None'}</p><div class="actions"><button class="btn action-btn save-btn ${isSaved ? 'saved' : ''}" data-word="${word}" ${isSaved ? 'disabled' : ''}>${isSaved ? 'Saved' : 'Save'}</button><button class="btn action-btn delete-btn">Delete</button></div>`;
                 resultsContainer.appendChild(card);
@@ -148,7 +162,6 @@
                     const word = target.dataset.word; const definition = card.querySelector('.definition').textContent; const synonyms = card.querySelector('.synonyms').textContent.replace('Synonyms: ', '');
                     saveWord({ word: word.toLowerCase(), definition, synonyms });
                     target.textContent = 'Saved'; target.classList.add('saved'); target.disabled = true;
-                    if (isSavedWordsVisible) { renderSavedWordsTable(); } // Refresh table if visible
                 } else if (target.classList.contains('delete-btn')) {
                     target.closest('.word-card').remove();
                 }
@@ -156,58 +169,42 @@
 
             function handleSavedListAction(e) {
                 if (e.target.classList.contains('delete-saved-btn')) {
-                    deleteSavedWord(e.target.dataset.word); renderSavedWordsTable(); // Always refresh table
-                } else if (e.target.classList.contains('show-saved-btn')) {
-                    const wordData = getSavedWords().find(item => item.word === e.target.dataset.word);
-                    if (wordData) { alert(`Word: ${wordData.word}\n\nDefinition: ${wordData.definition}\n\nSynonyms: ${wordData.synonyms}`); }
+                    deleteSavedWord(e.target.dataset.word); renderSavedWordsTable();
                 }
             }
 
-            // --- Local Storage Functions ---
+            // --- Local Storage ---
             function getSavedWords() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
             function saveWord(wordObject) { const savedWords = getSavedWords(); if (!savedWords.some(item => item.word === wordObject.word)) { savedWords.push(wordObject); localStorage.setItem(STORAGE_KEY, JSON.stringify(savedWords)); } }
             function deleteSavedWord(word) { let savedWords = getSavedWords(); savedWords = savedWords.filter(item => item.word !== word); localStorage.setItem(STORAGE_KEY, JSON.stringify(savedWords)); }
 
-            // --- NEW: Saved Words Table Functions ---
-            function toggleSavedWordsView() {
-                isSavedWordsVisible = !isSavedWordsVisible;
-                if (isSavedWordsVisible) {
-                    savedWordsArea.style.display = 'block';
-                    viewSavedBtn.textContent = 'Hide Saved';
-                    renderSavedWordsTable();
-                } else {
-                    savedWordsArea.style.display = 'none';
-                    viewSavedBtn.textContent = 'View Saved';
-                }
-            }
-
+            // --- Saved Words Table ---
             function renderSavedWordsTable() {
                 const savedWords = getSavedWords(); savedWordsTbody.innerHTML = '';
                 if (savedWords.length === 0) { savedWordsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No words saved yet.</td></tr>'; } 
                 else {
                     savedWords.sort((a, b) => a.word.localeCompare(b.word)).forEach(item => {
                         const row = savedWordsTbody.insertRow();
-                        row.innerHTML = `
-                            <td>${item.word}</td>
-                            <td>${item.definition}</td>
-                            <td>${item.synonyms}</td>
-                            <td class="saved-actions">
-                                <button class="btn show-saved-btn" data-word="${item.word}">Show</button>
-                                <button class="btn delete-saved-btn" data-word="${item.word}">Delete</button>
-                            </td>
-                        `;
+                        row.innerHTML = `<td>${item.word}</td><td>${item.definition}</td><td>${item.synonyms}</td><td><button class="btn delete-saved-btn" data-word="${item.word}">Delete</button></td>`;
                     });
                 }
             }
-
-            // --- Export & Import Functions (Unchanged) ---
-            function handleExportTXT() { const savedWords = getSavedWords(); if (savedWords.length === 0) { alert("No saved words to export."); return; } let textContent = "My Vocabulary List\n\n"; savedWords.forEach(item => { textContent += `Word: ${item.word}\nDefinition: ${item.definition}\nSynonyms: ${item.synonyms}\n\n`; }); downloadFile(textContent, 'vocabulary.txt', 'text/plain'); }
-            function handleExportCSV() { const savedWords = getSavedWords(); if (savedWords.length === 0) { alert("No saved words to export."); return; } let csvContent = '"Word","Definition","Synonyms"\n'; savedWords.forEach(item => { const row = [`"${item.word}"`, `"${item.definition.replace(/"/g, '""')}"`, `"${item.synonyms.replace(/"/g, '""')}"`]; csvContent += row.join(',') + '\n'; }); downloadFile(csvContent, 'vocabulary.csv', 'text/csv'); }
-            function downloadFile(content, fileName, mimeType) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type: mimeType })); a.setAttribute('download', fileName); document.body.appendChild(a); a.click(); document.body.removeChild(a); }
-            function handleImport() { const file = importFileInput.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { if (file.name.endsWith('.csv')) { parseAndMergeCSV(event.target.result); } else { parseAndMergeTXT(event.target.result); } } catch (e) { alert("Failed to parse file."); console.error(e); } }; reader.readAsText(file); importFileInput.value = ''; }
-            function parseAndMergeTXT(content) { const newWords = []; const entries = content.split('\n\n'); entries.forEach(entry => { if (!entry.includes('Word:')) return; const wordMatch = entry.match(/Word: (.*)/); const defMatch = entry.match(/Definition: (.*)/); const synMatch = entry.match(/Synonyms: (.*)/); if (wordMatch && defMatch) { newWords.push({ word: wordMatch[1].trim().toLowerCase(), definition: defMatch[1].trim(), synonyms: synMatch ? synMatch[1].trim() : 'None' }); } }); mergeWords(newWords); }
-            function parseAndMergeCSV(content) { const newWords = []; const rows = content.split('\n').slice(1); rows.forEach(row => { const cols = row.split('","'); if (cols.length === 3) { newWords.push({ word: cols[0].replace(/"/g, '').trim().toLowerCase(), definition: cols[1].replace(/"/g, '').trim(), synonyms: cols[2].replace(/"/g, '').trim() }); } }); mergeWords(newWords); }
-            function mergeWords(newWords) { const existingWords = getSavedWords(); const existingWordSet = new Set(existingWords.map(item => item.word)); let importedCount = 0; newWords.forEach(newWord => { if (newWord.word && !existingWordSet.has(newWord.word)) { existingWords.push(newWord); importedCount++; } }); localStorage.setItem(STORAGE_KEY, JSON.stringify(existingWords)); alert(`Import complete! Added ${importedCount} new words.`); if (isSavedWordsVisible) { renderSavedWordsTable(); } }
+            
+            // --- NEW: Quick Export (Copy) ---
+            function handleQuickExport() {
+                const savedWords = getSavedWords();
+                if (savedWords.length === 0) {
+                    statusDiv.textContent = "No saved words to copy.";
+                    return;
+                }
+                const wordsOnly = savedWords.map(item => item.word).join('\n');
+                navigator.clipboard.writeText(wordsOnly).then(() => {
+                    statusDiv.textContent = `Copied ${savedWords.length} words to clipboard!`;
+                }).catch(err => {
+                    statusDiv.textContent = 'Failed to copy words.';
+                    console.error('Clipboard error:', err);
+                });
+            }
         });
     </script>
 </body>
