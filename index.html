@@ -3,208 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Passage Analyzer</title>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <title>Quick Vocabulary Builder</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; background-color: #f8f9fa; color: #212529; margin: 0; padding: 1rem; }
-        .container { max-width: 900px; margin: 20px auto; padding: 2rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        h1 { text-align: center; color: #343a40; margin-bottom: 1rem; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; background-color: #f4f7f9; color: #333; margin: 0; padding: 1rem; }
+        .container { max-width: 800px; margin: 20px auto; padding: 2rem; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 1rem; }
+        .nav-area { text-align: center; margin-bottom: 2rem; }
+        
+        #word-input { width: 100%; min-height: 120px; padding: 12px; border: 2px solid #dde3e8; border-radius: 6px; resize: vertical; font-size: 1rem; margin-bottom: 1rem; box-sizing: border-box; }
+        #word-input:focus { border-color: #3498db; outline: none; }
+        
+        .controls { display: flex; justify-content: center; gap: 1rem; }
+        .btn { padding: 12px 25px; font-size: 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; }
+        #fetch-btn { background-color: #3498db; color: white; }
+        #fetch-btn:hover { background-color: #2980b9; }
+        #view-saved-btn { background-color: #f1c40f; color: #fff; }
+        #view-saved-btn:hover { background-color: #f39c12; }
+        
+        #status { text-align: center; color: #7f8c8d; min-height: 24px; margin-top: 1.5rem; }
 
-        /* --- Navigation Bar --- */
-        .main-nav { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #e9ecef;}
-        .nav-btn { background-color: #e9ecef; color: #495057; }
-        .nav-btn:hover { background-color: #dee2e6; }
+        /* Results Area */
+        #results-container { margin-top: 2rem; }
+        .word-card { background-color: #fff; border: 1px solid #ecf0f1; border-radius: 8px; padding: 20px; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 10px; }
+        .word-card h3 { margin: 0; color: #2c3e50; font-size: 1.5rem; }
+        .word-card p { margin: 0; color: #555; }
+        .word-card .synonyms { font-style: italic; color: #7f8c8d; }
+        .word-card .actions { margin-top: 10px; display: flex; gap: 10px; }
+        .word-card .action-btn { font-size: 0.8rem; padding: 6px 12px; }
+        .save-btn { background-color: #2ecc71; color: white; }
+        .save-btn:hover { background-color: #27ae60; }
+        .save-btn.saved { background-color: #bdc3c7; cursor: not-allowed; }
+        .delete-btn { background-color: #e74c3c; color: white; }
+        .delete-btn:hover { background-color: #c0392b; }
 
-        #drop-zone { border: 2px dashed #adb5bd; border-radius: 8px; padding: 40px 20px; text-align: center; color: #6c757d; cursor: pointer; transition: background-color 0.3s, border-color 0.3s; margin-bottom: 1rem; }
-        #drop-zone.dragover { background-color: #e9ecef; border-color: #0d6efd; }
-        #file-input { display: none; }
-        #text-input { width: 100%; min-height: 150px; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; resize: vertical; margin-top: 1rem; }
-        .controls { display: flex; justify-content: center; gap: 1rem; margin: 1.5rem 0; }
-        .btn { padding: 10px 20px; font-size: 1rem; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s, transform 0.1s; }
-        .btn:active { transform: scale(0.98); }
-        #process-btn { background-color: #0d6efd; color: white; }
-        #clear-btn { background-color: #6c757d; color: white; }
-        #save-passage-btn { background-color: #198754; color: white; } /* Save Passage Button */
-        #status { text-align: center; color: #6c757d; min-height: 24px; }
-
-        #passage-display { border: 1px solid #e9ecef; background-color: #fff; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; line-height: 1.8; text-align: justify; }
-        #passage-display h3 { font-size: 1.25rem; color: #212529; margin-top: 1.5rem; margin-bottom: 0.5rem; text-align: left; }
-        #passage-display p { margin-bottom: 1rem; }
-        .word { cursor: pointer; border-radius: 3px; padding: 2px 1px; transition: background-color 0.2s; }
-        .word:hover { background-color: #cfe2ff; }
-
-        /* --- Generic Modal for Lists --- */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); animation: fadeIn 0.3s; }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s; }
+        /* Modal for Saved Words */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); animation: fadeIn 0.3s; }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s; }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .modal-content h2 { margin-top: 0; }
-        .modal-body { max-height: 60vh; overflow-y: auto; }
-        
-        /* Styling for Saved Items List */
-        .saved-list { list-style-type: none; padding: 0; }
-        .saved-list li { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .saved-list li:last-child { border-bottom: none; }
-        .saved-list .item-title { font-weight: bold; }
-        .saved-list .action-btn { background-color: #0d6efd; color: white; font-size: 0.8rem; padding: 5px 10px; }
-
-        #save-word-btn { margin-top: 20px; background-color: #198754; color: white; }
-        #save-word-btn.saved { background-color: #ffc107; color: black; cursor: not-allowed;}
+        #saved-words-list { list-style: none; padding: 0; }
+        #saved-words-list li { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        #saved-words-list .delete-saved-btn { background-color: #e74c3c; color: white; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; }
         @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
         @keyframes slideIn { from {transform: translateY(-50px);} to {transform: translateY(0);} }
-        @media (max-width: 768px) { .container { padding: 1rem; margin: 10px; } .modal-content { width: 95%; margin: 20% auto; } }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>Personal Passage Analyzer</h1>
-
-        <nav class="main-nav">
-            <button id="view-passages-btn" class="btn nav-btn">Saved Passages</button>
-            <button id="view-words-btn" class="btn nav-btn">Saved Words</button>
-        </nav>
-
-        <div id="drop-zone"><p>Drop PDF, image, or .txt file here</p><input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt"></div>
-        <textarea id="text-input" placeholder="...or paste a passage here"></textarea>
+        <h1>Quick Vocabulary Builder</h1>
+        <div class="nav-area">
+            <button id="view-saved-btn" class="btn">View Saved Words</button>
+        </div>
+        <textarea id="word-input" placeholder="Paste words here, separated by spaces..."></textarea>
         <div class="controls">
-            <button id="process-btn" class="btn">Analyze</button>
-            <button id="save-passage-btn" class="btn">Save Passage</button>
-            <button id="clear-btn" class="btn">Clear</button>
+            <button id="fetch-btn" class="btn">Fetch Definitions</button>
         </div>
         <div id="status"></div>
-        <div id="passage-display"></div>
+        <div id="results-container"></div>
     </div>
 
-    <!-- Modal for Word Lookup -->
-    <div id="word-modal" class="modal">
+    <!-- Modal for Saved Words -->
+    <div id="saved-words-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn">&times;</span><h2 id="modal-word-title"></h2><div id="modal-word-body"></div>
-            <button id="save-word-btn" class="btn">Save Word</button>
-        </div>
-    </div>
-
-    <!-- Modal for Displaying Saved Lists (Passages/Words) -->
-    <div id="list-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span><h2 id="list-modal-title"></h2><div id="list-modal-body" class="modal-body"></div>
+            <span class="close-btn">&times;</span>
+            <h2>Saved Words</h2>
+            <ul id="saved-words-list"></ul>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- DOM Element References ---
-            const dropZone = document.getElementById('drop-zone'); const fileInput = document.getElementById('file-input'); const textInput = document.getElementById('text-input'); const processBtn = document.getElementById('process-btn'); const clearBtn = document.getElementById('clear-btn'); const statusDiv = document.getElementById('status'); const passageDisplay = document.getElementById('passage-display');
-            // Word Modal
-            const wordModal = document.getElementById('word-modal'); const modalWordTitle = document.getElementById('modal-word-title'); const modalWordBody = document.getElementById('modal-word-body'); const saveWordBtn = document.getElementById('save-word-btn');
-            // List Modal
-            const listModal = document.getElementById('list-modal'); const listModalTitle = document.getElementById('list-modal-title'); const listModalBody = document.getElementById('list-modal-body');
-            // New Buttons
-            const savePassageBtn = document.getElementById('save-passage-btn'); const viewPassagesBtn = document.getElementById('view-passages-btn'); const viewWordsBtn = document.getElementById('view-words-btn');
-            let currentFile = null;
+            // --- DOM Elements ---
+            const wordInput = document.getElementById('word-input');
+            const fetchBtn = document.getElementById('fetch-btn');
+            const viewSavedBtn = document.getElementById('view-saved-btn');
+            const statusDiv = document.getElementById('status');
+            const resultsContainer = document.getElementById('results-container');
+            const savedWordsModal = document.getElementById('saved-words-modal');
+            const closeModalBtn = savedWordsModal.querySelector('.close-btn');
+            const savedWordsList = document.getElementById('saved-words-list');
 
-            // --- File Handling ---
-            dropZone.addEventListener('click', () => fileInput.click()); dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); }); dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-            dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); currentFile = e.dataTransfer.files[0]; if (currentFile) { dropZone.querySelector('p').textContent = `File selected: ${currentFile.name}`; textInput.value = ''; } });
-            fileInput.addEventListener('change', () => { currentFile = fileInput.files[0]; if (currentFile) { dropZone.querySelector('p').textContent = `File selected: ${currentFile.name}`; textInput.value = ''; } });
+            // --- Event Listeners ---
+            fetchBtn.addEventListener('click', handleFetch);
+            viewSavedBtn.addEventListener('click', showSavedWordsModal);
+            closeModalBtn.addEventListener('click', () => savedWordsModal.style.display = 'none');
+            window.addEventListener('click', (e) => { if (e.target === savedWordsModal) savedWordsModal.style.display = 'none'; });
             
-            // --- Main Processing ---
-            processBtn.addEventListener('click', async () => { let text = textInput.value.trim(); passageDisplay.innerHTML = ''; if (currentFile) { statusDiv.textContent = 'Processing file...'; try { const fileText = await extractTextFromFile(currentFile); displayPassage(fileText); } catch (error) { statusDiv.textContent = 'Error processing file.'; } } else if (text) { statusDiv.textContent = 'Analyzing...'; displayPassage(text); } else { statusDiv.textContent = 'Please select a file or paste text.'; } });
-            async function extractTextFromFile(file) { const type = file.type; if (type === 'application/pdf') return await extractTextFromPDF(file); if (type.startsWith('image/')) return await extractTextFromImage(file); if (type === 'text/plain') return await file.text(); throw new Error('Unsupported type.'); }
-            async function extractTextFromPDF(file) { statusDiv.textContent = 'Extracting from PDF...'; pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js`; const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise; let text = ''; for (let i = 1; i <= pdf.numPages; i++) { const page = await pdf.getPage(i); const content = await page.getTextContent(); text += content.items.map(item => item.str).join(' ') + '\n\n'; } return text; }
-            async function extractTextFromImage(file) { statusDiv.textContent = 'Recognizing text...'; const worker = await Tesseract.createWorker('eng', 1, { logger: m => statusDiv.textContent = `Recognizing... ${Math.round(m.progress * 100)}%` }); const { data: { text } } = await worker.recognize(file); await worker.terminate(); return text; }
-            
-            function displayPassage(text) { passageDisplay.innerHTML = ''; const appendArticleBody = (body) => { if (!body.trim()) return; const p = document.createElement('p'); body.split(/(\s+|\b)/).forEach(frag => { const span = document.createElement('span'); span.textContent = frag; if (/[a-zA-Z]/.test(frag)) span.className = 'word'; p.appendChild(span); }); passageDisplay.appendChild(p); }; let currentArticleBody = ''; text.split('\n').forEach(line => { const trimmed = line.trim(); if (!trimmed) return; const isAllCaps = trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed); const isHeadline = isAllCaps && trimmed.split(/\s+/).length > 1 && trimmed.length < 120 && !trimmed.includes('C M Y K'); if (isHeadline) { appendArticleBody(currentArticleBody); currentArticleBody = ''; const h3 = document.createElement('h3'); h3.textContent = trimmed; passageDisplay.appendChild(h3); } else { currentArticleBody += line + ' '; } }); appendArticleBody(currentArticleBody); statusDiv.textContent = 'Analysis complete.'; }
+            // Use event delegation for dynamically created buttons
+            resultsContainer.addEventListener('click', handleResultAction);
+            savedWordsList.addEventListener('click', handleDeleteSavedWord);
 
-            // --- Word Lookup Logic ---
-            passageDisplay.addEventListener('click', (e) => { if (e.target.classList.contains('word')) { const word = e.target.textContent.trim().toLowerCase().replace(/[^a-z]/gi, ''); if (word) lookupWord(word); } });
-            async function lookupWord(word) { modalWordTitle.textContent = word; modalWordBody.innerHTML = '<i>Looking up...</i>'; openModal(wordModal); try { const originalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; const proxiedUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(originalApiUrl)}`; const response = await fetch(proxiedUrl); if (!response.ok) throw new Error('Proxy error.'); const blob = await response.json(); if (blob.contents.includes(`"title":"No Definitions Found"`)) { throw new Error('Word not found.'); } const data = JSON.parse(blob.contents); renderWordData(data); updateSaveButton(word); } catch (error) { console.error("Lookup Error:", error); modalWordBody.innerHTML = `<p>Could not find a definition for "<strong>${word}</strong>".</p>`; } }
-            function renderWordData(data) { modalWordBody.innerHTML = ''; data.forEach(entry => entry.meanings.forEach(meaning => { modalWordBody.innerHTML += `<h3>${meaning.partOfSpeech}</h3>`; meaning.definitions.forEach((def, i) => { modalWordBody.innerHTML += `<p><strong>${i + 1}.</strong> ${def.definition}</p>`; if (def.example) modalWordBody.innerHTML += `<p><em>Example: ${def.example}</em></p>`; }); if (meaning.synonyms?.length > 0) modalWordBody.innerHTML += `<p><strong>Synonyms:</strong> ${meaning.synonyms.join(', ')}</p>`; })); }
-            
-            // --- Saving Words ---
-            function getSavedWords() { return JSON.parse(localStorage.getItem('savedWords') || '[]'); }
-            function saveWord(word) { const words = getSavedWords(); if (!words.includes(word)) { words.push(word); localStorage.setItem('savedWords', JSON.stringify(words)); } }
-            function updateSaveButton(word) { const isSaved = getSavedWords().includes(word); saveWordBtn.textContent = isSaved ? 'Saved' : 'Save Word'; saveWordBtn.classList.toggle('saved', isSaved); saveWordBtn.disabled = isSaved; }
-            saveWordBtn.addEventListener('click', () => { const word = modalWordTitle.textContent; saveWord(word); updateSaveButton(word); });
-            
-            // --- NEW: Saving Passages ---
-            savePassageBtn.addEventListener('click', () => {
-                const passageText = passageDisplay.innerText;
-                if (!passageText || passageText.trim().length === 0) {
-                    statusDiv.textContent = "Nothing to save. Please analyze a passage first.";
+            // --- Core Functions ---
+            async function handleFetch() {
+                const text = wordInput.value.trim();
+                if (!text) {
+                    statusDiv.textContent = 'Please paste some words first.';
                     return;
                 }
-                const title = prompt("Enter a title for this passage:", "Untitled Passage");
-                if (title) {
-                    const savedPassages = JSON.parse(localStorage.getItem('savedPassages') || '[]');
-                    savedPassages.push({ title: title, content: passageText });
-                    localStorage.setItem('savedPassages', JSON.stringify(savedPassages));
-                    statusDiv.textContent = `Passage "${title}" saved successfully!`;
-                }
-            });
+                
+                resultsContainer.innerHTML = ''; // Clear previous results
+                statusDiv.textContent = 'Fetching definitions...';
 
-            // --- NEW: Viewing Saved Passages ---
-            viewPassagesBtn.addEventListener('click', () => {
-                const savedPassages = JSON.parse(localStorage.getItem('savedPassages') || '[]');
-                listModalTitle.textContent = "Saved Passages";
-                if (savedPassages.length === 0) {
-                    listModalBody.innerHTML = "<p>You have no saved passages.</p>";
-                } else {
-                    const ul = document.createElement('ul');
-                    ul.className = 'saved-list';
-                    savedPassages.forEach((passage, index) => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<span class="item-title">${passage.title}</span><button class="btn action-btn" data-index="${index}">Load</button>`;
-                        ul.appendChild(li);
-                    });
-                    listModalBody.innerHTML = '';
-                    listModalBody.appendChild(ul);
+                const words = text.split(/\s+/).filter(word => word.length > 0);
+                const uniqueWords = [...new Set(words)]; // Get unique words
+
+                for (const word of uniqueWords) {
+                    const data = await getWordDefinition(word.toLowerCase());
+                    renderWordResult(word, data);
                 }
-                openModal(listModal);
-            });
+                statusDiv.textContent = `Fetched ${uniqueWords.length} unique words.`;
+            }
             
-            // --- NEW: Viewing Saved Words ---
-            viewWordsBtn.addEventListener('click', () => {
+            async function getWordDefinition(word) {
+                try {
+                    const originalApiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+                    const proxiedUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(originalApiUrl)}`;
+                    const response = await fetch(proxiedUrl);
+                    if (!response.ok) return { error: 'API Error' };
+                    const blob = await response.json();
+                    if (blob.contents.includes(`"title":"No Definitions Found"`)) {
+                        return { error: 'No definition found.' };
+                    }
+                    const data = JSON.parse(blob.contents);
+                    const firstMeaning = data[0]?.meanings[0];
+                    const definition = firstMeaning?.definitions[0]?.definition || 'No definition available.';
+                    const synonyms = firstMeaning?.synonyms?.slice(0, 5).join(', ') || 'None';
+                    return { definition, synonyms };
+                } catch (error) {
+                    return { error: 'Failed to fetch.' };
+                }
+            }
+            
+            function renderWordResult(word, data) {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                
+                let definitionHTML = `<p>${data.definition}</p>`;
+                if (data.error) {
+                    definitionHTML = `<p style="color: #e74c3c;">${data.error}</p>`;
+                }
+                
                 const savedWords = getSavedWords();
-                listModalTitle.textContent = "Saved Words";
+                const isSaved = savedWords.includes(word.toLowerCase());
+                
+                card.innerHTML = `
+                    <h3>${word}</h3>
+                    ${definitionHTML}
+                    <p class="synonyms"><strong>Synonyms:</strong> ${data.synonyms || 'None'}</p>
+                    <div class="actions">
+                        <button class="btn action-btn save-btn ${isSaved ? 'saved' : ''}" data-word="${word}" ${isSaved ? 'disabled' : ''}>
+                            ${isSaved ? 'Saved' : 'Save'}
+                        </button>
+                        <button class="btn action-btn delete-btn">Delete</button>
+                    </div>
+                `;
+                resultsContainer.appendChild(card);
+            }
+
+            function handleResultAction(e) {
+                const target = e.target;
+                if (target.classList.contains('save-btn')) {
+                    const word = target.dataset.word;
+                    saveWord(word.toLowerCase());
+                    target.textContent = 'Saved';
+                    target.classList.add('saved');
+                    target.disabled = true;
+                } else if (target.classList.contains('delete-btn')) {
+                    target.closest('.word-card').remove();
+                }
+            }
+
+            function handleDeleteSavedWord(e) {
+                if (e.target.classList.contains('delete-saved-btn')) {
+                    const word = e.target.dataset.word;
+                    deleteSavedWord(word);
+                    showSavedWordsModal(); // Refresh the list
+                }
+            }
+
+            // --- Local Storage Functions ---
+            function getSavedWords() {
+                return JSON.parse(localStorage.getItem('savedVocabWords') || '[]');
+            }
+
+            function saveWord(word) {
+                const savedWords = getSavedWords();
+                if (!savedWords.includes(word)) {
+                    savedWords.push(word);
+                    localStorage.setItem('savedVocabWords', JSON.stringify(savedWords));
+                }
+            }
+
+            function deleteSavedWord(word) {
+                let savedWords = getSavedWords();
+                savedWords = savedWords.filter(w => w !== word);
+                localStorage.setItem('savedVocabWords', JSON.stringify(savedWords));
+            }
+
+            // --- Modal Functions ---
+            function showSavedWordsModal() {
+                const savedWords = getSavedWords();
+                savedWordsList.innerHTML = ''; // Clear current list
                 if (savedWords.length === 0) {
-                    listModalBody.innerHTML = "<p>You have no saved words.</p>";
+                    savedWordsList.innerHTML = '<li>No words saved yet.</li>';
                 } else {
-                    const ul = document.createElement('ul');
-                    ul.className = 'saved-list';
                     savedWords.sort().forEach(word => {
                         const li = document.createElement('li');
-                        li.innerHTML = `<span class="item-title">${word}</span>`;
-                        ul.appendChild(li);
+                        li.innerHTML = `
+                            <span>${word}</span>
+                            <button class="btn delete-saved-btn" data-word="${word}">Delete</button>
+                        `;
+                        savedWordsList.appendChild(li);
                     });
-                    listModalBody.innerHTML = '';
-                    listModalBody.appendChild(ul);
                 }
-                openModal(listModal);
-            });
-
-            // --- NEW: Event Listener for loading a saved passage ---
-            listModalBody.addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON' && e.target.textContent === 'Load') {
-                    const savedPassages = JSON.parse(localStorage.getItem('savedPassages') || '[]');
-                    const passageIndex = e.target.dataset.index;
-                    const passageToLoad = savedPassages[passageIndex];
-                    if (passageToLoad) {
-                        displayPassage(passageToLoad.content);
-                        closeModal(listModal);
-                    }
-                }
-            });
-
-            // --- Modal Controls ---
-            function openModal(modalElement) { modalElement.style.display = "block"; }
-            function closeModal(modalElement) { modalElement.style.display = "none"; }
-            document.querySelectorAll('.modal .close-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal')));
-            });
-            window.addEventListener('click', (e) => { if (e.target.classList.contains('modal')) closeModal(e.target); });
-
-            // --- General Controls ---
-            clearBtn.addEventListener('click', () => { textInput.value = ''; passageDisplay.innerHTML = ''; statusDiv.textContent = ''; dropZone.querySelector('p').textContent = 'Drop PDF, image, or .txt file here'; fileInput.value = ''; currentFile = null; });
+                savedWordsModal.style.display = 'block';
+            }
         });
     </script>
 </body>
