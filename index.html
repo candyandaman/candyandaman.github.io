@@ -16,18 +16,19 @@
         h1, h2, h3 { text-align: center; color: var(--text-primary); margin-bottom: 1rem; }
         
         /* Screen Management */
-        .screen { display: none; /* All screens are hidden by default now */ }
-        #app-loading-screen { display: block; } /* Show loading screen initially */
+        .screen { display: none; }
+        #app-loading-screen { display: block; }
 
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .nav-area { text-align: center; margin-bottom: 2rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         #word-input { width: 100%; min-height: 120px; padding: 12px; background-color: var(--bg-card); color: var(--text-primary); border: 2px solid var(--border-color); border-radius: 6px; resize: vertical; font-size: 1rem; margin-bottom: 1rem; box-sizing: border-box; }
-        #word-input:focus { border-color: var(--accent-blue); outline: none; }
         
         .controls { display: flex; justify-content: center; gap: 1rem; }
         .btn { padding: 12px 25px; font-size: 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; color: white; }
         #fetch-btn { background-color: var(--accent-blue); }
         #clear-input-btn { background-color: #616161; }
         #view-saved-btn { background-color: var(--accent-yellow); color: #121212; }
+        #quick-copy-btn { background-color: var(--accent-purple); }
         #data-mgmt-btn { background-color: var(--accent-orange); }
         
         #status { text-align: center; color: var(--text-secondary); min-height: 24px; margin-top: 1.5rem; font-weight: bold; }
@@ -38,7 +39,6 @@
         .word-card h3 { color: var(--accent-blue); }
         .word-card .save-btn { background-color: var(--accent-green); }
         .word-card .save-btn.saved { background-color: #424242; cursor: not-allowed; }
-        .word-card .delete-btn { background-color: var(--accent-red); }
 
         /* Saved Words Screen Table */
         .back-nav { margin-bottom: 1.5rem; }
@@ -49,39 +49,55 @@
         .favorite-btn.favorited { color: var(--accent-yellow); }
         tr.is-favorite { background-color: #3a3a2a; border-left: 3px solid var(--accent-yellow); }
 
-        /* Login Screen Styles */
+        /* Login Screen */
         #login-screen { text-align: center; }
         #login-screen input { display: block; width: 80%; max-width: 300px; margin: 10px auto; padding: 12px; font-size: 1rem; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; }
-        #login-controls { display: flex; justify-content: center; gap: 10px; margin-top: 1rem; }
+
+        /* NEW: Profile Dropdown */
+        .profile-area { position: relative; }
+        #profile-btn { font-size: 1.5rem; padding: 8px 15px; background-color: transparent; border: 1px solid var(--border-color); }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: var(--bg-surface); min-width: 220px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid var(--border-color); z-index: 10; padding: 12px; text-align: center;}
+        .dropdown-content.show { display: block; }
+        #user-email-display { font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; word-wrap: break-word; }
+        #logout-btn { background-color: var(--accent-red); width: 100%; }
+        
+        /* Data Management Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); }
+        .modal-content { background-color: var(--bg-surface); margin: 15% auto; padding: 25px; border-radius: 8px; width: 90%; max-width: 500px; border: 1px solid var(--border-color); }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .data-section { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+        .data-section .btn { width: 100%; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- SCREEN 1: App Loading Screen -->
-        <div id="app-loading-screen" class="screen">
-            <h1>Pro Vocabulary Builder</h1>
-            <p id="auth-status" style="text-align: center;">Initializing...</p>
-        </div>
-
-        <!-- SCREEN 2: Login Screen -->
+        <!-- SCREENS -->
+        <div id="app-loading-screen" class="screen"><h1 style="text-align: center;">Initializing...</h1></div>
         <div id="login-screen" class="screen">
             <h1>Login or Sign Up</h1>
             <input type="email" id="email-input" placeholder="Enter your email" autocomplete="email">
             <input type="password" id="password-input" placeholder="Enter your password" autocomplete="current-password">
-            <div id="login-controls">
+            <div class="controls">
                 <button id="login-btn" class="btn" style="background-color: var(--accent-blue);">Login</button>
                 <button id="signup-btn" class="btn" style="background-color: var(--accent-green);">Sign Up</button>
             </div>
         </div>
 
-        <!-- SCREEN 3: Home Screen (Main App) -->
         <div id="home-screen" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="header-area">
                 <h1>Pro Vocabulary Builder</h1>
-                <button id="logout-btn" class="btn" style="background-color: var(--accent-red);">Logout</button>
+                <div class="profile-area">
+                    <button id="profile-btn" class="btn">👤</button>
+                    <div id="profile-dropdown" class="dropdown-content">
+                        <p id="user-email-display"></p>
+                        <button id="logout-btn" class="btn">Logout</button>
+                    </div>
+                </div>
             </div>
             <div class="nav-area">
                 <button id="view-saved-btn" class="btn">View Saved</button>
+                <button id="quick-copy-btn" class="btn">Copy Words</button>
+                <button id="data-mgmt-btn" class="btn">Data Tools</button>
             </div>
             <textarea id="word-input" placeholder="Paste words here..."></textarea>
             <div class="controls">
@@ -92,7 +108,6 @@
             <div id="results-container"></div>
         </div>
 
-        <!-- SCREEN 4: Saved Words Screen -->
         <div id="saved-words-screen" class="screen">
             <div class="back-nav"><button id="back-btn" class="btn">&larr; Back to Home</button></div>
             <h2>Saved Words</h2>
@@ -103,88 +118,112 @@
         </div>
     </div>
 
-    <!-- STEP 1: Add Firebase SDKs -->
+    <!-- Data Management Modal -->
+    <div id="data-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span><h2>Data Management</h2>
+            <div class="data-section">
+                <h3>Export Full Collection</h3>
+                <button id="export-txt-btn" class="btn" style="background-color: var(--accent-blue);">Export as TXT</button>
+                <button id="export-csv-btn" class="btn" style="background-color: var(--accent-green);">Export as CSV</button>
+            </div>
+            <div class="data-section">
+                <h3>Import Words</h3>
+                <button id="import-btn" class="btn" style="background-color: var(--accent-orange);">Import from File (.txt, .csv)</button>
+                <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // STEP 2: Paste your Firebase config object here
-    const firebaseConfig = {
-  apiKey: "AIzaSyC1n_8KwPtrKm4_lWwQm7K9spOm1sedUks",
-  authDomain: "pro-vocab.firebaseapp.com",
-  projectId: "pro-vocab",
-  storageBucket: "pro-vocab.firebasestorage.app",
-  messagingSenderId: "357885339745",
-  appId: "1:357885339745:web:874ac11b08e1d5cb8f2220"
-};
+        // PASTE YOUR FIREBASE CONFIG OBJECT HERE
+        const firebaseConfig = {
+            apiKey: "...",
+            authDomain: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
 
-        // STEP 3: Initialize Firebase
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        let userWordsCollection; // This will hold the path to the user's specific data
+        let userWordsCollection;
 
         // --- GLOBAL VARIABLES & DOM REFERENCES ---
-        let localSavedWordsCache = []; // A local copy to avoid constant DB reads
+        let localSavedWordsCache = [];
         
         // Screens
         const appLoadingScreen = document.getElementById('app-loading-screen');
         const loginScreen = document.getElementById('login-screen');
         const homeScreen = document.getElementById('home-screen');
         const savedWordsScreen = document.getElementById('saved-words-screen');
-        const authStatus = document.getElementById('auth-status');
-
-        // Login elements
+        
+        // Auth & Profile
         const emailInput = document.getElementById('email-input');
         const passwordInput = document.getElementById('password-input');
         const loginBtn = document.getElementById('login-btn');
         const signupBtn = document.getElementById('signup-btn');
         const logoutBtn = document.getElementById('logout-btn');
+        const profileBtn = document.getElementById('profile-btn');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        const userEmailDisplay = document.getElementById('user-email-display');
 
         // App elements
         const wordInput = document.getElementById('word-input');
         const fetchBtn = document.getElementById('fetch-btn');
         const clearInputBtn = document.getElementById('clear-input-btn');
         const viewSavedBtn = document.getElementById('view-saved-btn');
+        const quickCopyBtn = document.getElementById('quick-copy-btn');
         const backBtn = document.getElementById('back-btn');
         const statusDiv = document.getElementById('status');
         const resultsContainer = document.getElementById('results-container');
         const savedWordsTbody = document.getElementById('saved-words-tbody');
 
-        // --- AUTHENTICATION LOGIC ---
-        loginBtn.addEventListener('click', () => {
-            auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
-                .catch(error => alert(error.message));
-        });
+        // Data Modal elements
+        const dataMgmtBtn = document.getElementById('data-mgmt-btn');
+        const dataModal = document.getElementById('data-modal');
+        const closeModalBtn = dataModal.querySelector('.close-btn');
+        const exportTxtBtn = document.getElementById('export-txt-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const importBtn = document.getElementById('import-btn');
+        const importFileInput = document.getElementById('import-file-input');
+        
 
-        signupBtn.addEventListener('click', () => {
-            auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
-                .catch(error => alert(error.message));
-        });
-
+        // --- AUTHENTICATION & PROFILE ---
+        loginBtn.addEventListener('click', () => auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value).catch(error => alert(error.message)));
+        signupBtn.addEventListener('click', () => auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value).catch(error => alert(error.message)));
         logoutBtn.addEventListener('click', () => auth.signOut());
+        profileBtn.addEventListener('click', () => profileDropdown.classList.toggle('show'));
 
-        // This is the core function that checks if a user is logged in or out
+        window.addEventListener('click', (e) => {
+            if (!e.target.matches('#profile-btn')) {
+                if (profileDropdown.classList.contains('show')) {
+                    profileDropdown.classList.remove('show');
+                }
+            }
+        });
+        
         auth.onAuthStateChanged(async user => {
             if (user) {
-                // User is logged IN
-                authStatus.textContent = `Welcome! Loading your words...`;
                 userWordsCollection = db.collection('users').doc(user.uid).collection('words');
-                await fetchAndRenderWords(); // Load data from Firestore
+                userEmailDisplay.textContent = user.email;
+                await fetchAndRenderWords();
                 
-                // Show the main app, hide login/loading
                 appLoadingScreen.style.display = 'none';
                 loginScreen.style.display = 'none';
                 homeScreen.style.display = 'block';
                 savedWordsScreen.style.display = 'none';
 
             } else {
-                // User is logged OUT
-                authStatus.textContent = 'Please log in to continue.';
-                localSavedWordsCache = []; // Clear local data on logout
-                
-                // Show the login screen, hide others
+                localSavedWordsCache = [];
                 appLoadingScreen.style.display = 'none';
                 loginScreen.style.display = 'block';
                 homeScreen.style.display = 'none';
@@ -193,130 +232,154 @@
         });
 
 
-        // --- APPLICATION LOGIC (NOW USES FIRESTORE) ---
-        
-        // Event Listeners
+        // --- APPLICATION LOGIC ---
         fetchBtn.addEventListener('click', handleFetch);
         clearInputBtn.addEventListener('click', () => { wordInput.value = ''; });
         viewSavedBtn.addEventListener('click', showSavedWordsScreen);
         backBtn.addEventListener('click', showHomeScreen);
         resultsContainer.addEventListener('click', handleResultAction);
         savedWordsTbody.addEventListener('click', handleSavedListAction);
+        quickCopyBtn.addEventListener('click', handleQuickCopy);
+
+        // Data Modal Listeners
+        dataMgmtBtn.addEventListener('click', () => dataModal.style.display = 'block');
+        closeModalBtn.addEventListener('click', () => dataModal.style.display = 'none');
+        window.addEventListener('click', (e) => { if (e.target === dataModal) dataModal.style.display = 'none'; });
+        exportTxtBtn.addEventListener('click', handleExportTXT);
+        exportCsvBtn.addEventListener('click', handleExportCSV);
+        importBtn.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', handleImport);
         
         function showHomeScreen() { homeScreen.style.display = 'block'; savedWordsScreen.style.display = 'none'; }
         async function showSavedWordsScreen() { 
             homeScreen.style.display = 'none'; 
             savedWordsScreen.style.display = 'block'; 
-            await fetchAndRenderWords(); // Always get fresh data when viewing
+            await fetchAndRenderWords();
         }
 
-        async function handleFetch() { /* This function remains mostly the same */ }
-        async function getWordDefinition(word) { /* This function remains the same */ }
+        function renderWordResult(word, data) { /* Unchanged */ }
+        async function handleResultAction(e) { /* Unchanged */ }
+        async function handleSavedListAction(e) { /* Unchanged */ }
+
+        // --- FIRESTORE DATA FUNCTIONS ---
+        async function saveWord(wordObject) { /* Unchanged */ }
+        async function deleteSavedWord(docId) { /* Unchanged */ }
+        async function toggleFavorite(docId, newFavState) { /* Unchanged */ }
         
-        function renderWordResult(word, data) {
-            const card = document.createElement('div');
-            card.className = 'word-card';
-            let defHTML = `<p class="definition">${data.definition}</p>`;
-            if (data.error) { defHTML = `<p class="definition" style="color: var(--accent-red);">${data.error}</p>`; }
-            const isSaved = localSavedWordsCache.some(item => item.word === word.toLowerCase());
-            card.innerHTML = `<h3>${word}</h3>${defHTML}<p><strong>Synonyms:</strong> ${data.synonyms || 'None'}</p><div class="actions"><button class="btn save-btn ${isSaved ? 'saved' : ''}" data-word="${word}" ${isSaved ? 'disabled' : ''}>${isSaved ? 'Saved' : 'Save'}</button></div>`;
-            resultsContainer.appendChild(card);
-        }
-
-        async function handleResultAction(e) {
-            if (e.target.classList.contains('save-btn')) {
-                const card = e.target.closest('.word-card');
-                const word = e.target.dataset.word.toLowerCase();
-                const wordObject = {
-                    word: word,
-                    definition: card.querySelector('.definition').textContent,
-                    synonyms: card.querySelector('p:last-of-type').textContent.replace('Synonyms: ', ''),
-                    isFavorite: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp() // For sorting
-                };
-                
-                await saveWord(wordObject); // Save to Firestore
-                
-                e.target.textContent = 'Saved';
-                e.target.classList.add('saved');
-                e.target.disabled = true;
-            }
-        }
-
-        async function handleSavedListAction(e) {
-            const docId = e.target.dataset.id;
-            if (!docId) return;
-
-            if (e.target.classList.contains('delete-saved-btn')) {
-                await deleteSavedWord(docId);
-            }
-            if (e.target.classList.contains('favorite-btn')) {
-                const isCurrentlyFavorite = e.target.classList.contains('favorited');
-                await toggleFavorite(docId, !isCurrentlyFavorite);
-            }
-            await fetchAndRenderWords(); // Re-render the table after any action
-        }
-
-        // --- NEW FIRESTORE DATA FUNCTIONS ---
-
-        async function saveWord(wordObject) {
-            try {
-                const newDocRef = await userWordsCollection.add(wordObject);
-                wordObject.id = newDocRef.id; // Add firestore ID to local cache object
-                localSavedWordsCache.push(wordObject); // Update local cache
-            } catch (error) {
-                console.error("Error saving word: ", error);
-                alert("Could not save word. Please try again.");
-            }
-        }
-
-        async function deleteSavedWord(docId) {
-            try {
-                await userWordsCollection.doc(docId).delete();
-            } catch (error) { console.error("Error deleting word: ", error); }
-        }
-
-        async function toggleFavorite(docId, newFavState) {
-            try {
-                await userWordsCollection.doc(docId).update({ isFavorite: newFavState });
-            } catch (error) { console.error("Error updating favorite status: ", error); }
-        }
-
         async function fetchAndRenderWords() {
             try {
-                // Query Firestore to get words, ordered by favorite status then by creation time
                 const snapshot = await userWordsCollection.orderBy('isFavorite', 'desc').orderBy('createdAt', 'desc').get();
-                
                 localSavedWordsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                savedWordsTbody.innerHTML = ''; // Clear existing table
-                if (localSavedWordsCache.length === 0) {
-                    savedWordsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No words saved yet.</td></tr>';
-                } else {
-                    localSavedWordsCache.forEach(item => {
-                        const row = savedWordsTbody.insertRow();
-                        row.className = item.isFavorite ? 'is-favorite' : '';
-                        const favIcon = item.isFavorite ? '★' : '☆';
-                        const favClass = item.isFavorite ? 'favorited' : '';
-                        row.innerHTML = `
-                            <td><button class="action-btn favorite-btn ${favClass}" data-id="${item.id}">${favIcon}</button></td>
-                            <td>${item.word}</td>
-                            <td>${item.definition}</td>
-                            <td>${item.synonyms}</td>
-                            <td><button class="action-btn delete-saved-btn" title="Delete" data-id="${item.id}">🗑️</button></td>
-                        `;
-                    });
-                }
+                renderSavedWordsTable();
             } catch (error) {
                 console.error("Error fetching words: ", error);
-                savedWordsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--accent-red);">Could not load words.</td></tr>';
+                savedWordsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--accent-red);">Could not load words. Ensure Firestore index is built.</td></tr>`;
             }
         }
 
-        // Helper function to re-use from the original code (no changes needed)
+        function renderSavedWordsTable() {
+            savedWordsTbody.innerHTML = '';
+            if (localSavedWordsCache.length === 0) {
+                savedWordsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No words saved yet.</td></tr>';
+            } else {
+                localSavedWordsCache.forEach(item => {
+                    const row = savedWordsTbody.insertRow();
+                    row.className = item.isFavorite ? 'is-favorite' : '';
+                    row.innerHTML = `<td><button class="action-btn favorite-btn ${item.isFavorite ? 'favorited' : ''}" data-id="${item.id}">${item.isFavorite ? '★' : '☆'}</button></td>
+                                     <td>${item.word}</td><td>${item.definition}</td><td>${item.synonyms}</td>
+                                     <td><button class="action-btn delete-saved-btn" title="Delete" data-id="${item.id}">🗑️</button></td>`;
+                });
+            }
+        }
+        
+        // --- NEW & UPDATED HELPER FUNCTIONS ---
+        function handleQuickCopy() {
+            if (localSavedWordsCache.length === 0) { statusDiv.textContent = "No saved words to copy."; return; }
+            const text = localSavedWordsCache.map(item => item.word).join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                statusDiv.textContent = `Copied ${localSavedWordsCache.length} words to clipboard!`;
+            }).catch(err => { statusDiv.textContent = 'Failed to copy.'; });
+        }
+
+        function handleExportTXT() {
+            if (localSavedWordsCache.length === 0) { alert("No words to export."); return; }
+            let content = "";
+            localSavedWordsCache.forEach(item => { content += `Word: ${item.word}\nDefinition: ${item.definition}\nSynonyms: ${item.synonyms}\nFavorite: ${item.isFavorite ? 'Yes' : 'No'}\n\n`; });
+            downloadFile(content, 'vocabulary.txt', 'text/plain');
+        }
+
+        function handleExportCSV() {
+            if (localSavedWordsCache.length === 0) { alert("No words to export."); return; }
+            let content = '"Word","Definition","Synonyms","Favorite"\n';
+            localSavedWordsCache.forEach(item => {
+                const row = [`"${item.word}"`, `"${item.definition.replace(/"/g, '""')}"`, `"${item.synonyms.replace(/"/g, '""')}"`, `"${item.isFavorite}"`];
+                content += row.join(',') + '\n';
+            });
+            downloadFile(content, 'vocabulary.csv', 'text/csv');
+        }
+        
+        function downloadFile(content, fileName, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function handleImport() {
+            const file = importFileInput.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    let newWords = [];
+                    if (file.name.endsWith('.csv')) { newWords = parseCSV(e.target.result); } 
+                    else { newWords = parseTXT(e.target.result); }
+                    await mergeWords(newWords);
+                } catch (err) { alert("Failed to parse or import file."); console.error(err); }
+            };
+            reader.readAsText(file);
+            importFileInput.value = '';
+        }
+
+        function parseTXT(content) { /* Unchanged */ }
+        function parseCSV(content) { /* Unchanged */ }
+
+        async function mergeWords(newWords) {
+            const existingWordsSet = new Set(localSavedWordsCache.map(item => item.word));
+            let importedCount = 0;
+            const batch = db.batch();
+
+            newWords.forEach(newWord => {
+                if (newWord.word && !existingWordsSet.has(newWord.word)) {
+                    const newDocRef = userWordsCollection.doc(); // Create a new doc reference
+                    batch.set(newDocRef, { ...newWord, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    importedCount++;
+                }
+            });
+
+            if (importedCount > 0) {
+                await batch.commit();
+                alert(`Import complete! Added ${importedCount} new words.`);
+                await fetchAndRenderWords(); // Refresh the list from the server
+            } else {
+                alert("Import complete! No new words were added (they may already exist).");
+            }
+            dataModal.style.display = 'none';
+        }
+        
+        // --- UNCHANGED HELPER FUNCTIONS ---
         async function handleFetch() { const text = wordInput.value.trim(); if (!text) { statusDiv.textContent = 'Please paste some words first.'; return; } resultsContainer.innerHTML = ''; statusDiv.textContent = 'Fetching definitions...'; const words = [...new Set(text.split(/\s+/).filter(Boolean))]; await Promise.all(words.map(async (word) => { const data = await getWordDefinition(word.toLowerCase()); renderWordResult(word, data); })); statusDiv.textContent = `Fetched ${words.length} unique words.`; }
         async function getWordDefinition(word) { try { const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`; const response = await fetch(proxyUrl); if (!response.ok) return { error: 'API Error' }; const blob = await response.json(); if (blob.contents.includes(`"title":"No Definitions Found"`)) return { error: 'No definition found.' }; const data = JSON.parse(blob.contents); const meaning = data[0]?.meanings[0]; return { definition: meaning?.definitions[0]?.definition || 'N/A', synonyms: meaning?.synonyms?.slice(0, 10).join(', ') || 'None' }; } catch (error) { return { error: 'Failed to fetch.' }; } }
-
+        function renderWordResult(word, data) { const card = document.createElement('div'); card.className = 'word-card'; let defHTML = `<p class="definition">${data.definition}</p>`; if (data.error) { defHTML = `<p class="definition" style="color: var(--accent-red);">${data.error}</p>`; } const isSaved = localSavedWordsCache.some(item => item.word === word.toLowerCase()); card.innerHTML = `<h3>${word}</h3>${defHTML}<p><strong>Synonyms:</strong> ${data.synonyms || 'None'}</p><div class="actions"><button class="btn save-btn ${isSaved ? 'saved' : ''}" data-word="${word}" ${isSaved ? 'disabled' : ''}>${isSaved ? 'Saved' : 'Save'}</button></div>`; resultsContainer.appendChild(card); }
+        async function handleResultAction(e) { if (e.target.classList.contains('save-btn')) { const card = e.target.closest('.word-card'); const word = e.target.dataset.word.toLowerCase(); const wordObject = { word: word, definition: card.querySelector('.definition').textContent, synonyms: card.querySelector('p:last-of-type').textContent.replace('Synonyms: ', ''), isFavorite: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() }; await saveWord(wordObject); e.target.textContent = 'Saved'; e.target.classList.add('saved'); e.target.disabled = true; } }
+        async function handleSavedListAction(e) { const docId = e.target.dataset.id; if (!docId) return; if (e.target.classList.contains('delete-saved-btn')) { await deleteSavedWord(docId); } if (e.target.classList.contains('favorite-btn')) { const isCurrentlyFavorite = e.target.classList.contains('favorited'); await toggleFavorite(docId, !isCurrentlyFavorite); } await fetchAndRenderWords(); }
+        async function saveWord(wordObject) { try { const newDocRef = await userWordsCollection.add(wordObject); localSavedWordsCache.push({ id: newDocRef.id, ...wordObject }); } catch (error) { console.error("Error saving word: ", error); } }
+        async function deleteSavedWord(docId) { try { await userWordsCollection.doc(docId).delete(); } catch (error) { console.error("Error deleting word: ", error); } }
+        async function toggleFavorite(docId, newFavState) { try { await userWordsCollection.doc(docId).update({ isFavorite: newFavState }); } catch (error) { console.error("Error updating favorite status: ", error); } }
+        function parseTXT(content) { const newWords = []; const entries = content.split('\n\n'); entries.forEach(entry => { if (!entry.includes('Word:')) return; const wordMatch = entry.match(/Word: (.*)/); const defMatch = entry.match(/Definition: (.*)/); const synMatch = entry.match(/Synonyms: (.*)/); const favMatch = entry.match(/Favorite: (Yes|No)/); if (wordMatch && defMatch) { newWords.push({ word: wordMatch[1].trim().toLowerCase(), definition: defMatch[1].trim(), synonyms: synMatch ? synMatch[1].trim() : 'None', isFavorite: favMatch ? favMatch[1] === 'Yes' : false }); } }); return newWords; }
+        function parseCSV(content) { const newWords = []; const rows = content.split('\n').slice(1); rows.forEach(row => { const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || []; if (cols.length >= 3) { newWords.push({ word: cols[0].replace(/"/g, '').trim().toLowerCase(), definition: cols[1].replace(/"/g, '').trim(), synonyms: cols[2].replace(/"/g, '').trim(), isFavorite: cols[3] ? cols[3].replace(/"/g, '').trim().toLowerCase() === 'true' : false }); } }); return newWords; }
     </script>
 </body>
 </html>
