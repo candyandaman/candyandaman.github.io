@@ -43,17 +43,38 @@
         /* Saved Words Screen Table */
         .back-nav { margin-bottom: 1.5rem; }
         #back-btn { background-color: #616161; }
-        .saved-words-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        .saved-words-table th, td { padding: 12px; border: 1px solid var(--border-color); text-align: left; vertical-align: middle; }
+        .saved-words-table { width: 100%; border-collapse: collapse; margin-top: 1rem; table-layout: fixed; }
+        .saved-words-table th, td { padding: 12px; border: 1px solid var(--border-color); text-align: left; vertical-align: middle; word-wrap: break-word; }
         .action-btn { font-size: 1.2rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; vertical-align: middle; }
         .favorite-btn.favorited { color: var(--accent-yellow); }
         tr.is-favorite { background-color: #3a3a2a; border-left: 3px solid var(--accent-yellow); }
+
+        /* NEW: Styles for the editable meaning cell */
+        .user-meaning-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            min-height: 60px;
+            resize: vertical;
+        }
+        .save-meaning-btn {
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 6px;
+            background-color: var(--accent-blue);
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
 
         /* Login Screen */
         #login-screen { text-align: center; }
         #login-screen input { display: block; width: 80%; max-width: 300px; margin: 10px auto; padding: 12px; font-size: 1rem; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; }
 
-        /* NEW: Profile Dropdown */
+        /* Profile Dropdown */
         .profile-area { position: relative; }
         #profile-btn { font-size: 1.5rem; padding: 8px 15px; background-color: transparent; border: 1px solid var(--border-color); }
         .dropdown-content { display: none; position: absolute; right: 0; background-color: var(--bg-surface); min-width: 220px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid var(--border-color); z-index: 10; padding: 12px; text-align: center;}
@@ -112,7 +133,8 @@
             <div class="back-nav"><button id="back-btn" class="btn">&larr; Back to Home</button></div>
             <h2>Saved Words</h2>
             <table class="saved-words-table">
-                <thead><tr><th>Fav</th><th>Word</th><th>Definition</th><th>Synonyms</th><th>Actions</th></tr></thead>
+                <!-- UPDATED: Added 'Your Meaning' column header -->
+                <thead><tr><th>Fav</th><th>Word</th><th>Definition</th><th>Synonyms</th><th>Your Meaning</th><th>Actions</th></tr></thead>
                 <tbody id="saved-words-tbody"></tbody>
             </table>
         </div>
@@ -142,14 +164,14 @@
 
     <script>
         // PASTE YOUR FIREBASE CONFIG OBJECT HERE
-const firebaseConfig = {
-  apiKey: "AIzaSyC1n_8KwPtrKm4_lWwQm7K9spOm1sedUks",
-  authDomain: "pro-vocab.firebaseapp.com",
-  projectId: "pro-vocab",
-  storageBucket: "pro-vocab.firebasestorage.app",
-  messagingSenderId: "357885339745",
-  appId: "1:357885339745:web:874ac11b08e1d5cb8f2220"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyC1n_8KwPtrKm4_lWwQm7K9spOm1sedUks",
+            authDomain: "pro-vocab.firebaseapp.com",
+            projectId: "pro-vocab",
+            storageBucket: "pro-vocab.firebasestorage.app",
+            messagingSenderId: "357885339745",
+            appId: "1:357885339745:web:874ac11b08e1d5cb8f2220"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -204,7 +226,7 @@ const firebaseConfig = {
         profileBtn.addEventListener('click', () => profileDropdown.classList.toggle('show'));
 
         window.addEventListener('click', (e) => {
-            if (!e.target.matches('#profile-btn')) {
+            if (!e.target.matches('#profile-btn') && !e.target.closest('.profile-area')) {
                 if (profileDropdown.classList.contains('show')) {
                     profileDropdown.classList.remove('show');
                 }
@@ -257,15 +279,7 @@ const firebaseConfig = {
             await fetchAndRenderWords();
         }
 
-        function renderWordResult(word, data) { /* Unchanged */ }
-        async function handleResultAction(e) { /* Unchanged */ }
-        async function handleSavedListAction(e) { /* Unchanged */ }
-
         // --- FIRESTORE DATA FUNCTIONS ---
-        async function saveWord(wordObject) { /* Unchanged */ }
-        async function deleteSavedWord(docId) { /* Unchanged */ }
-        async function toggleFavorite(docId, newFavState) { /* Unchanged */ }
-        
         async function fetchAndRenderWords() {
             try {
                 const snapshot = await userWordsCollection.orderBy('isFavorite', 'desc').orderBy('createdAt', 'desc').get();
@@ -273,79 +287,154 @@ const firebaseConfig = {
                 renderSavedWordsTable();
             } catch (error) {
                 console.error("Error fetching words: ", error);
-                savedWordsTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--accent-red);">Could not load words. Ensure Firestore index is built.</td></tr>`;
+                savedWordsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--accent-red);">Could not load words. Ensure Firestore index is built.</td></tr>`;
             }
         }
 
         function renderSavedWordsTable() {
             savedWordsTbody.innerHTML = '';
             if (localSavedWordsCache.length === 0) {
-                savedWordsTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No words saved yet.</td></tr>';
+                savedWordsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No words saved yet.</td></tr>';
             } else {
                 localSavedWordsCache.forEach(item => {
                     const row = savedWordsTbody.insertRow();
                     row.className = item.isFavorite ? 'is-favorite' : '';
-                    row.innerHTML = `<td><button class="action-btn favorite-btn ${item.isFavorite ? 'favorited' : ''}" data-id="${item.id}">${item.isFavorite ? '★' : '☆'}</button></td>
-                                     <td>${item.word}</td><td>${item.definition}</td><td>${item.synonyms}</td>
-                                     <td><button class="action-btn delete-saved-btn" title="Delete" data-id="${item.id}">🗑️</button></td>`;
+                    row.innerHTML = `
+                        <td><button class="action-btn favorite-btn ${item.isFavorite ? 'favorited' : ''}" data-id="${item.id}">${item.isFavorite ? '★' : '☆'}</button></td>
+                        <td>${item.word}</td>
+                        <td>${item.definition}</td>
+                        <td>${item.synonyms}</td>
+                        <td>
+                            <textarea class="user-meaning-input" data-id="${item.id}" placeholder="Add your meaning...">${item.userMeaning || ''}</textarea>
+                            <button class="btn save-meaning-btn" data-id="${item.id}">Save</button>
+                        </td>
+                        <td><button class="action-btn delete-saved-btn" title="Delete" data-id="${item.id}">🗑️</button></td>
+                    `;
                 });
             }
         }
+
+        // NEW: Function to save the user's custom meaning
+        async function updateUserMeaning(docId, newMeaning) {
+            try {
+                await userWordsCollection.doc(docId).update({ userMeaning: newMeaning });
+                // Update local cache to reflect change immediately
+                const wordInCache = localSavedWordsCache.find(word => word.id === docId);
+                if (wordInCache) {
+                    wordInCache.userMeaning = newMeaning;
+                }
+            } catch (error) {
+                console.error("Error updating user meaning: ", error);
+                alert("Could not save your meaning. Please try again.");
+            }
+        }
         
-        // --- NEW & UPDATED HELPER FUNCTIONS ---
-        function handleQuickCopy() {
-            if (localSavedWordsCache.length === 0) { statusDiv.textContent = "No saved words to copy."; return; }
-            const text = localSavedWordsCache.map(item => item.word).join('\n');
-            navigator.clipboard.writeText(text).then(() => {
-                statusDiv.textContent = `Copied ${localSavedWordsCache.length} words to clipboard!`;
-            }).catch(err => { statusDiv.textContent = 'Failed to copy.'; });
+        // --- EVENT HANDLERS ---
+        async function handleSavedListAction(e) {
+            const docId = e.target.dataset.id;
+            if (!docId) return;
+
+            if (e.target.classList.contains('delete-saved-btn')) {
+                await deleteSavedWord(docId);
+                await fetchAndRenderWords(); // Refresh table
+            } else if (e.target.classList.contains('favorite-btn')) {
+                const isCurrentlyFavorite = e.target.classList.contains('favorited');
+                await toggleFavorite(docId, !isCurrentlyFavorite);
+                await fetchAndRenderWords(); // Refresh table
+            } else if (e.target.classList.contains('save-meaning-btn')) {
+                const textarea = document.querySelector(`.user-meaning-input[data-id="${docId}"]`);
+                if (textarea) {
+                    await updateUserMeaning(docId, textarea.value);
+                    e.target.textContent = 'Saved!'; // Provide feedback
+                    setTimeout(() => { e.target.textContent = 'Save'; }, 2000); // Reset button text
+                }
+            }
         }
 
+        async function handleResultAction(e) { 
+            if (e.target.classList.contains('save-btn')) { 
+                const card = e.target.closest('.word-card'); 
+                const word = e.target.dataset.word.toLowerCase(); 
+                const wordObject = { 
+                    word: word, 
+                    definition: card.querySelector('.definition').textContent, 
+                    synonyms: card.querySelector('p:last-of-type').textContent.replace('Synonyms: ', ''), 
+                    isFavorite: false,
+                    userMeaning: '', // Initialize with empty meaning
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+                }; 
+                await saveWord(wordObject); 
+                e.target.textContent = 'Saved'; 
+                e.target.classList.add('saved'); 
+                e.target.disabled = true; 
+            } 
+        }
+
+        // --- DATA MANAGEMENT FUNCTIONS (UPGRADED FOR 'userMeaning') ---
         function handleExportTXT() {
             if (localSavedWordsCache.length === 0) { alert("No words to export."); return; }
             let content = "";
-            localSavedWordsCache.forEach(item => { content += `Word: ${item.word}\nDefinition: ${item.definition}\nSynonyms: ${item.synonyms}\nFavorite: ${item.isFavorite ? 'Yes' : 'No'}\n\n`; });
+            localSavedWordsCache.forEach(item => { 
+                content += `Word: ${item.word}\n`;
+                content += `Definition: ${item.definition}\n`;
+                content += `Synonyms: ${item.synonyms || 'None'}\n`;
+                content += `Your Meaning: ${item.userMeaning || ''}\n`;
+                content += `Favorite: ${item.isFavorite ? 'Yes' : 'No'}\n\n`;
+            });
             downloadFile(content, 'vocabulary.txt', 'text/plain');
         }
 
         function handleExportCSV() {
             if (localSavedWordsCache.length === 0) { alert("No words to export."); return; }
-            let content = '"Word","Definition","Synonyms","Favorite"\n';
+            let content = '"Word","Definition","Synonyms","Your Meaning","Favorite"\n';
             localSavedWordsCache.forEach(item => {
-                const row = [`"${item.word}"`, `"${item.definition.replace(/"/g, '""')}"`, `"${item.synonyms.replace(/"/g, '""')}"`, `"${item.isFavorite}"`];
+                const row = [
+                    `"${item.word}"`,
+                    `"${(item.definition || '').replace(/"/g, '""')}"`,
+                    `"${(item.synonyms || 'None').replace(/"/g, '""')}"`,
+                    `"${(item.userMeaning || '').replace(/"/g, '""')}"`,
+                    `"${item.isFavorite}"`
+                ];
                 content += row.join(',') + '\n';
             });
             downloadFile(content, 'vocabulary.csv', 'text/csv');
         }
+
+        function parseTXT(content) {
+            const newWords = [];
+            content.split('\n\n').forEach(entry => {
+                if (!entry.includes('Word:')) return;
+                const word = entry.match(/Word: (.*)/)?.[1].trim().toLowerCase();
+                if (word) {
+                    newWords.push({
+                        word: word,
+                        definition: entry.match(/Definition: (.*)/)?.[1].trim() || '',
+                        synonyms: entry.match(/Synonyms: (.*)/)?.[1].trim() || 'None',
+                        userMeaning: entry.match(/Your Meaning: (.*)/)?.[1].trim() || '',
+                        isFavorite: entry.match(/Favorite: (Yes)/) ? true : false,
+                    });
+                }
+            });
+            return newWords;
+        }
+
+        function parseCSV(content) {
+            const newWords = [];
+            content.split('\n').slice(1).forEach(row => {
+                const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                if (cols.length >= 4) { // Check for enough columns
+                    newWords.push({
+                        word: cols[0].replace(/"/g, '').trim().toLowerCase(),
+                        definition: cols[1].replace(/"/g, '').trim(),
+                        synonyms: cols[2].replace(/"/g, '').trim(),
+                        userMeaning: cols[3].replace(/"/g, '').trim(),
+                        isFavorite: (cols[4] || '').replace(/"/g, '').trim().toLowerCase() === 'true',
+                    });
+                }
+            });
+            return newWords;
+        }
         
-        function downloadFile(content, fileName, mimeType) {
-            const blob = new Blob([content], { type: mimeType });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function handleImport() {
-            const file = importFileInput.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    let newWords = [];
-                    if (file.name.endsWith('.csv')) { newWords = parseCSV(e.target.result); } 
-                    else { newWords = parseTXT(e.target.result); }
-                    await mergeWords(newWords);
-                } catch (err) { alert("Failed to parse or import file."); console.error(err); }
-            };
-            reader.readAsText(file);
-            importFileInput.value = '';
-        }
-
-        function parseTXT(content) { /* Unchanged */ }
-        function parseCSV(content) { /* Unchanged */ }
-
         async function mergeWords(newWords) {
             const existingWordsSet = new Set(localSavedWordsCache.map(item => item.word));
             let importedCount = 0;
@@ -353,7 +442,7 @@ const firebaseConfig = {
 
             newWords.forEach(newWord => {
                 if (newWord.word && !existingWordsSet.has(newWord.word)) {
-                    const newDocRef = userWordsCollection.doc(); // Create a new doc reference
+                    const newDocRef = userWordsCollection.doc();
                     batch.set(newDocRef, { ...newWord, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
                     importedCount++;
                 }
@@ -362,25 +451,23 @@ const firebaseConfig = {
             if (importedCount > 0) {
                 await batch.commit();
                 alert(`Import complete! Added ${importedCount} new words.`);
-                await fetchAndRenderWords(); // Refresh the list from the server
+                await fetchAndRenderWords();
             } else {
                 alert("Import complete! No new words were added (they may already exist).");
             }
             dataModal.style.display = 'none';
         }
-        
-        // --- UNCHANGED HELPER FUNCTIONS ---
+
+        // ---UNCHANGED HELPER & CORE FUNCTIONS ---
+        function handleQuickCopy() { if (localSavedWordsCache.length === 0) { statusDiv.textContent = "No saved words to copy."; return; } const text = localSavedWordsCache.map(item => item.word).join('\n'); navigator.clipboard.writeText(text).then(() => { statusDiv.textContent = `Copied ${localSavedWordsCache.length} words to clipboard!`; }).catch(err => { statusDiv.textContent = 'Failed to copy.'; }); }
+        function downloadFile(content, fileName, mimeType) { const blob = new Blob([content], { type: mimeType }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+        function handleImport() { const file = importFileInput.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async (e) => { try { let newWords = []; if (file.name.endsWith('.csv')) { newWords = parseCSV(e.target.result); } else { newWords = parseTXT(e.target.result); } await mergeWords(newWords); } catch (err) { alert("Failed to parse or import file."); console.error(err); } }; reader.readAsText(file); importFileInput.value = ''; }
         async function handleFetch() { const text = wordInput.value.trim(); if (!text) { statusDiv.textContent = 'Please paste some words first.'; return; } resultsContainer.innerHTML = ''; statusDiv.textContent = 'Fetching definitions...'; const words = [...new Set(text.split(/\s+/).filter(Boolean))]; await Promise.all(words.map(async (word) => { const data = await getWordDefinition(word.toLowerCase()); renderWordResult(word, data); })); statusDiv.textContent = `Fetched ${words.length} unique words.`; }
         async function getWordDefinition(word) { try { const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`; const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`; const response = await fetch(proxyUrl); if (!response.ok) return { error: 'API Error' }; const blob = await response.json(); if (blob.contents.includes(`"title":"No Definitions Found"`)) return { error: 'No definition found.' }; const data = JSON.parse(blob.contents); const meaning = data[0]?.meanings[0]; return { definition: meaning?.definitions[0]?.definition || 'N/A', synonyms: meaning?.synonyms?.slice(0, 10).join(', ') || 'None' }; } catch (error) { return { error: 'Failed to fetch.' }; } }
         function renderWordResult(word, data) { const card = document.createElement('div'); card.className = 'word-card'; let defHTML = `<p class="definition">${data.definition}</p>`; if (data.error) { defHTML = `<p class="definition" style="color: var(--accent-red);">${data.error}</p>`; } const isSaved = localSavedWordsCache.some(item => item.word === word.toLowerCase()); card.innerHTML = `<h3>${word}</h3>${defHTML}<p><strong>Synonyms:</strong> ${data.synonyms || 'None'}</p><div class="actions"><button class="btn save-btn ${isSaved ? 'saved' : ''}" data-word="${word}" ${isSaved ? 'disabled' : ''}>${isSaved ? 'Saved' : 'Save'}</button></div>`; resultsContainer.appendChild(card); }
-        async function handleResultAction(e) { if (e.target.classList.contains('save-btn')) { const card = e.target.closest('.word-card'); const word = e.target.dataset.word.toLowerCase(); const wordObject = { word: word, definition: card.querySelector('.definition').textContent, synonyms: card.querySelector('p:last-of-type').textContent.replace('Synonyms: ', ''), isFavorite: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() }; await saveWord(wordObject); e.target.textContent = 'Saved'; e.target.classList.add('saved'); e.target.disabled = true; } }
-        async function handleSavedListAction(e) { const docId = e.target.dataset.id; if (!docId) return; if (e.target.classList.contains('delete-saved-btn')) { await deleteSavedWord(docId); } if (e.target.classList.contains('favorite-btn')) { const isCurrentlyFavorite = e.target.classList.contains('favorited'); await toggleFavorite(docId, !isCurrentlyFavorite); } await fetchAndRenderWords(); }
         async function saveWord(wordObject) { try { const newDocRef = await userWordsCollection.add(wordObject); localSavedWordsCache.push({ id: newDocRef.id, ...wordObject }); } catch (error) { console.error("Error saving word: ", error); } }
         async function deleteSavedWord(docId) { try { await userWordsCollection.doc(docId).delete(); } catch (error) { console.error("Error deleting word: ", error); } }
         async function toggleFavorite(docId, newFavState) { try { await userWordsCollection.doc(docId).update({ isFavorite: newFavState }); } catch (error) { console.error("Error updating favorite status: ", error); } }
-        function parseTXT(content) { const newWords = []; const entries = content.split('\n\n'); entries.forEach(entry => { if (!entry.includes('Word:')) return; const wordMatch = entry.match(/Word: (.*)/); const defMatch = entry.match(/Definition: (.*)/); const synMatch = entry.match(/Synonyms: (.*)/); const favMatch = entry.match(/Favorite: (Yes|No)/); if (wordMatch && defMatch) { newWords.push({ word: wordMatch[1].trim().toLowerCase(), definition: defMatch[1].trim(), synonyms: synMatch ? synMatch[1].trim() : 'None', isFavorite: favMatch ? favMatch[1] === 'Yes' : false }); } }); return newWords; }
-        function parseCSV(content) { const newWords = []; const rows = content.split('\n').slice(1); rows.forEach(row => { const cols = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || []; if (cols.length >= 3) { newWords.push({ word: cols[0].replace(/"/g, '').trim().toLowerCase(), definition: cols[1].replace(/"/g, '').trim(), synonyms: cols[2].replace(/"/g, '').trim(), isFavorite: cols[3] ? cols[3].replace(/"/g, '').trim().toLowerCase() === 'true' : false }); } }); return newWords; }
     </script>
 </body>
 </html>
-
